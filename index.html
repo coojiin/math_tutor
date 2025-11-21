@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>數學挑戰 - 彈窗解析版</title>
+    <title>數學挑戰 - 積分挑戰版</title>
     <style>
         :root {
             --primary-color: #4a90e2;
@@ -25,7 +25,7 @@
             align-items: center;
             min-height: 100vh;
             color: #333;
-            overflow-x: hidden; /* 防止手機左右滑動 */
+            overflow-x: hidden;
         }
 
         .container {
@@ -34,7 +34,7 @@
             max-width: 700px;
             border-radius: 20px;
             box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-            padding: 30px;
+            padding: 25px; /* 稍微減少 padding 留給上方計分板 */
             text-align: center;
             transition: all 0.3s ease;
             position: relative;
@@ -44,10 +44,33 @@
         h1 {
             color: var(--primary-color);
             font-size: 2rem;
-            margin-bottom: 20px;
+            margin-bottom: 10px;
         }
 
-        /* 選單按鈕 */
+        /* 計分板樣式 */
+        .score-board {
+            display: flex;
+            justify-content: space-between;
+            background-color: #fdf8e4;
+            border: 2px solid #f5a623;
+            padding: 10px 20px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            font-weight: bold;
+            color: #d48e15;
+        }
+
+        .score-item {
+            display: flex;
+            flex-direction: column;
+            font-size: 0.9rem;
+        }
+
+        .score-val {
+            font-size: 1.5rem;
+            color: #333;
+        }
+
         .menu-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -59,13 +82,24 @@
             background-color: white;
             border: 2px solid var(--primary-color);
             color: var(--primary-color);
-            padding: 20px;
-            font-size: 1.3rem;
+            padding: 15px;
+            font-size: 1.2rem;
             border-radius: 15px;
             cursor: pointer;
             transition: 0.2s;
             font-weight: bold;
             touch-action: manipulation;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .mode-btn span.high-score {
+            font-size: 0.8rem;
+            color: #666;
+            margin-top: 5px;
+            font-weight: normal;
         }
 
         .mode-btn.mixed-mode {
@@ -78,13 +112,12 @@
         .mode-btn:active { transform: scale(0.98); background-color: #eee; }
         .mode-btn.mixed-mode:active { background-color: var(--accent-color); color: white; }
 
-        /* 練習區 */
         #practice-area { display: none; }
 
         .problem-display {
             font-size: 2.8rem;
             font-weight: bold;
-            margin: 20px 0;
+            margin: 10px 0 20px 0;
             color: #2c3e50;
             white-space: nowrap;
         }
@@ -122,15 +155,13 @@
 
         .action-btn:active { transform: translateY(4px); box-shadow: none; }
 
-        /* 簡易結果提示 (不佔空間) */
         #mini-feedback {
             margin-top: 15px;
             font-size: 1.2rem;
             font-weight: bold;
-            height: 30px; /* 固定高度避免跳動 */
+            height: 30px; 
         }
         
-        /* 查看詳解按鈕 (預設隱藏) */
         .explain-btn {
             background-color: #fff;
             border: 2px solid #999;
@@ -140,159 +171,129 @@
             margin-top: 10px;
             cursor: pointer;
             font-size: 1rem;
-            display: none; /* 預設不顯示 */
+            display: none; 
         }
-        .explain-btn:active { background-color: #eee; }
-
-        /* ============================== */
-        /*       彈出視窗 (Modal) 樣式     */
-        /* ============================== */
+        
+        /* Modal 樣式 */
         .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.6); /* 半透明黑色背景 */
-            z-index: 9999; /* 最上層 */
-            display: none; /* 預設隱藏 */
-            justify-content: center;
-            align-items: center;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-            backdrop-filter: blur(3px); /* 背景模糊效果 (iPad上效果很好) */
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0, 0, 0, 0.6); z-index: 9999;
+            display: none; justify-content: center; align-items: center;
+            opacity: 0; transition: opacity 0.3s ease; backdrop-filter: blur(3px);
         }
 
-        .modal-overlay.active {
-            display: flex;
-            opacity: 1;
-        }
+        .modal-overlay.active { display: flex; opacity: 1; }
 
         .modal-content {
-            background-color: #fff;
-            width: 85%;
-            max-width: 500px;
-            max-height: 80vh; /* 避免超出螢幕高度 */
-            overflow-y: auto; /* 內容太長可捲動 */
-            border-radius: 20px;
-            padding: 25px;
-            position: relative;
-            transform: scale(0.8);
-            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* 彈跳特效 */
-            box-shadow: 0 20px 50px rgba(0,0,0,0.3);
-            text-align: left;
+            background-color: #fff; width: 85%; max-width: 500px; max-height: 80vh;
+            overflow-y: auto; border-radius: 20px; padding: 25px;
+            transform: scale(0.8); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.3); text-align: left;
         }
 
-        .modal-overlay.active .modal-content {
-            transform: scale(1);
-        }
+        .modal-overlay.active .modal-content { transform: scale(1); }
 
         .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 2px solid #f0f0f0;
-            padding-bottom: 10px;
-            margin-bottom: 15px;
+            display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 2px solid #f0f0f0; padding-bottom: 10px; margin-bottom: 15px;
         }
 
-        .modal-title {
-            font-size: 1.4rem;
-            font-weight: bold;
-            color: var(--primary-color);
-        }
-
+        .modal-title { font-size: 1.4rem; font-weight: bold; color: var(--primary-color); }
         .close-modal-btn {
-            background: #eee;
-            border: none;
-            width: 35px;
-            height: 35px;
-            border-radius: 50%;
-            font-size: 1.2rem;
-            color: #555;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            background: #eee; border: none; width: 35px; height: 35px; border-radius: 50%;
+            font-size: 1.2rem; cursor: pointer; display: flex; align-items: center; justify-content: center;
         }
 
         .step-box {
-            background: #f9f9f9;
-            padding: 15px;
-            border-radius: 10px;
-            border-left: 5px solid var(--accent-color);
-            margin-bottom: 15px;
+            background: #f9f9f9; padding: 15px; border-radius: 10px;
+            border-left: 5px solid var(--accent-color); margin-bottom: 15px;
         }
 
-        .step-highlight {
-            background-color: #fff3cd;
-            padding: 2px 5px;
-            border-radius: 4px;
-            font-weight: bold;
-            color: #856404;
-        }
-        
         .back-btn {
             background: none; border: none; color: #999; margin-top: 20px;
             font-size: 1rem; text-decoration: underline; cursor: pointer;
         }
 
+        /* 慶祝動畫 */
+        @keyframes pop { 50% { transform: scale(1.2); } }
+        .new-record-anim { animation: pop 0.3s ease-in-out; color: #d0021b; }
+
     </style>
 </head>
 <body>
 
-<!-- 主容器 -->
 <div class="container">
     <!-- 首頁選單 -->
     <div id="home-menu">
-        <h1>🧮 數學大冒險</h1>
-        <p>選擇挑戰模式：</p>
+        <h1>🏆 數學挑戰賽</h1>
+        <p>打破紀錄，成為數學小博士！</p>
         <div class="menu-grid">
-            <button class="mode-btn" onclick="startPractice('add')">➕ 加法</button>
-            <button class="mode-btn" onclick="startPractice('subtract')">➖ 減法</button>
-            <button class="mode-btn" onclick="startPractice('multiply')">✖️ 乘法</button>
-            <button class="mode-btn" onclick="startPractice('divide')">➗ 除法</button>
-            <button class="mode-btn mixed-mode" onclick="startPractice('mixed')">🚀 混合運算挑戰</button>
+            <button class="mode-btn" onclick="startPractice('add')">
+                ➕ 加法
+                <span class="high-score" id="score-add">紀錄: 0</span>
+            </button>
+            <button class="mode-btn" onclick="startPractice('subtract')">
+                ➖ 減法
+                <span class="high-score" id="score-subtract">紀錄: 0</span>
+            </button>
+            <button class="mode-btn" onclick="startPractice('multiply')">
+                ✖️ 乘法
+                <span class="high-score" id="score-multiply">紀錄: 0</span>
+            </button>
+            <button class="mode-btn" onclick="startPractice('divide')">
+                ➗ 除法
+                <span class="high-score" id="score-divide">紀錄: 0</span>
+            </button>
+            <button class="mode-btn mixed-mode" onclick="startPractice('mixed')">
+                🚀 混合運算挑戰
+                <span class="high-score" id="score-mixed">紀錄: 0</span>
+            </button>
         </div>
     </div>
 
     <!-- 練習區 -->
     <div id="practice-area">
-        <h2 id="mode-title">練習模式</h2>
-        
-        <div class="problem-display" id="problem-text">
-            <!-- 題目 -->
+        <!-- 計分板 -->
+        <div class="score-board">
+            <div class="score-item">
+                <span>✨ 本次得分</span>
+                <span class="score-val" id="current-score">0</span>
+            </div>
+            <div class="score-item" style="text-align:right;">
+                <span>🏆 最高紀錄</span>
+                <span class="score-val" id="best-score">0</span>
+            </div>
         </div>
+
+        <h3 id="mode-title" style="color:#999; margin:0; font-size:1rem;">練習模式</h3>
+        
+        <div class="problem-display" id="problem-text"></div>
 
         <div>
             <input type="number" id="answer-input" placeholder="?" pattern="[0-9]*" inputmode="numeric">
         </div>
 
-        <!-- 簡單的結果反饋文字 -->
         <div id="mini-feedback"></div>
 
         <button class="action-btn" id="check-btn" onclick="checkAnswer()">送出答案</button>
         
-        <!-- 這是觸發彈窗的按鈕 -->
         <button class="explain-btn" id="explain-trigger" onclick="openModal()">💡 查看解題思路</button>
 
         <button class="action-btn" id="next-btn" onclick="generateProblem()" style="display:none; background-color: var(--primary-color);">下一題 ➜</button>
 
         <br>
-        <button class="back-btn" onclick="goHome()">回主選單</button>
+        <button class="back-btn" onclick="goHome()">結束練習 (回主選單)</button>
     </div>
 </div>
 
-<!-- 彈出視窗 (Modal) 結構 -->
+<!-- 彈出視窗 (Modal) -->
 <div id="explanation-modal" class="modal-overlay" onclick="closeModalOutside(event)">
     <div class="modal-content">
         <div class="modal-header">
             <span class="modal-title">📝 解題思路</span>
             <button class="close-modal-btn" onclick="closeModal()">✕</button>
         </div>
-        <div id="modal-body">
-            <!-- 這裡的內容會透過 JavaScript 動態填入 -->
-        </div>
+        <div id="modal-body"></div>
         <div style="text-align: center; margin-top: 20px;">
             <button class="action-btn" onclick="closeModal()" style="padding: 10px 30px; font-size: 1rem; width:auto;">我知道了！</button>
         </div>
@@ -304,25 +305,72 @@
     let num1 = 0, num2 = 0;
     let mixedProblem = null;
     let correctAnswer = 0;
-    let currentExplanationHTML = ''; // 暫存解題思路的 HTML
+    let currentExplanationHTML = '';
+    
+    // 積分變數
+    let currentSessionScore = 0;
+    let highScores = {
+        'add': 0, 'subtract': 0, 'multiply': 0, 'divide': 0, 'mixed': 0
+    };
+
+    // 初始化：從 localStorage 讀取分數
+    window.onload = function() {
+        loadHighScores();
+        updateMenuScores();
+    };
+
+    function loadHighScores() {
+        const saved = localStorage.getItem('mathTutorHighScores');
+        if (saved) {
+            highScores = JSON.parse(saved);
+        }
+    }
+
+    function saveHighScores() {
+        localStorage.setItem('mathTutorHighScores', JSON.stringify(highScores));
+    }
+
+    function updateMenuScores() {
+        for (const [mode, score] of Object.entries(highScores)) {
+            const el = document.getElementById(`score-${mode}`);
+            if(el) el.innerText = `紀錄: ${score}`;
+        }
+    }
 
     function startPractice(mode) {
         currentMode = mode;
+        currentSessionScore = 0; // 重置當前分數
+        
         document.getElementById('home-menu').style.display = 'none';
         document.getElementById('practice-area').style.display = 'block';
         
         const titles = {
             'add': '加法練習', 'subtract': '減法練習',
             'multiply': '乘法練習', 'divide': '除法練習',
-            'mixed': '混合運算 (先乘除後加減)'
+            'mixed': '混合運算'
         };
         document.getElementById('mode-title').innerText = titles[mode];
+        
+        updateScoreUI(); // 更新上方計分板
         generateProblem();
+    }
+
+    function updateScoreUI() {
+        document.getElementById('current-score').innerText = currentSessionScore;
+        document.getElementById('best-score').innerText = highScores[currentMode];
+        
+        // 如果破紀錄，改變顏色
+        if (currentSessionScore > highScores[currentMode] && highScores[currentMode] > 0) {
+            document.getElementById('current-score').classList.add('new-record-anim');
+        } else {
+            document.getElementById('current-score').classList.remove('new-record-anim');
+        }
     }
 
     function goHome() {
         document.getElementById('practice-area').style.display = 'none';
         document.getElementById('home-menu').style.display = 'block';
+        updateMenuScores(); // 回首頁時更新按鈕上的分數
         resetUI();
     }
 
@@ -330,7 +378,7 @@
         resetUI();
         const input = document.getElementById('answer-input');
         input.value = '';
-        input.focus(); // 讓 iPad 鍵盤彈出
+        input.focus();
 
         if (currentMode === 'mixed') {
             generateMixedProblem();
@@ -340,6 +388,7 @@
     }
 
     function generateBasicProblem() {
+        // 根據模式產生題目 (與之前相同)
         switch(currentMode) {
             case 'add':
                 num1 = r(10, 99); num2 = r(10, 99); 
@@ -365,60 +414,27 @@
     }
 
     function generateMixedProblem() {
+        // 混合運算邏輯 (與之前相同)
         const type = Math.floor(Math.random() * 4);
         let n1, n2, n3;
-
-        if (type === 0) { // A + B x C
+        if (type === 0) { 
             n2 = r(2,9); n3 = r(2,9); n1 = r(1,20);
             correctAnswer = n1 + (n2 * n3);
-            mixedProblem = {
-                text: `${n1} + ${n2} × ${n3} = ?`,
-                html: generateStepHTML('先算乘法，再算加法', `${n2} × ${n3} = ${n2*n3}`, `${n1} + ${n2*n3} = ${correctAnswer}`)
-            };
-        } else if (type === 1) { // A - B x C
-            n2 = r(2,5); n3 = r(2,5);
-            let m = n2 * n3;
-            n1 = m + r(5,20);
+            mixedProblem = { text: `${n1} + ${n2} × ${n3} = ?`, html: generateStepHTML('先算乘法', `${n2} × ${n3} = ${n2*n3}`, `${n1} + ${n2*n3} = ${correctAnswer}`) };
+        } else if (type === 1) {
+            n2 = r(2,5); n3 = r(2,5); let m = n2 * n3; n1 = m + r(5,20);
             correctAnswer = n1 - m;
-            mixedProblem = {
-                text: `${n1} - ${n2} × ${n3} = ?`,
-                html: generateStepHTML('雖然減號在前面，但要先算後面的乘法', `${n2} × ${n3} = ${m}`, `${n1} - ${m} = ${correctAnswer}`)
-            };
-        } else if (type === 2) { // A + B / C
+            mixedProblem = { text: `${n1} - ${n2} × ${n3} = ?`, html: generateStepHTML('先算乘法', `${n2} × ${n3} = ${m}`, `${n1} - ${m} = ${correctAnswer}`) };
+        } else if (type === 2) {
             n3 = r(2,9); let q = r(2,9); n2 = n3 * q; n1 = r(1,20);
             correctAnswer = n1 + q;
-            mixedProblem = {
-                text: `${n1} + ${n2} ÷ ${n3} = ?`,
-                html: generateStepHTML('記得口訣：先乘除，後加減', `${n2} ÷ ${n3} = ${q}`, `${n1} + ${q} = ${correctAnswer}`)
-            };
-        } else { // A - B / C
+            mixedProblem = { text: `${n1} + ${n2} ÷ ${n3} = ?`, html: generateStepHTML('先算除法', `${n2} ÷ ${n3} = ${q}`, `${n1} + ${q} = ${correctAnswer}`) };
+        } else {
             n3 = r(2,9); let q = r(2,9); n2 = n3 * q; n1 = q + r(5,20);
             correctAnswer = n1 - q;
-            mixedProblem = {
-                text: `${n1} - ${n2} ÷ ${n3} = ?`,
-                html: generateStepHTML('看到除號了嗎？優先處理它', `${n2} ÷ ${n3} = ${q}`, `${n1} - ${q} = ${correctAnswer}`)
-            };
+            mixedProblem = { text: `${n1} - ${n2} ÷ ${n3} = ?`, html: generateStepHTML('先算除法', `${n2} ÷ ${n3} = ${q}`, `${n1} - ${q} = ${correctAnswer}`) };
         }
         setProblem(mixedProblem.text);
-    }
-
-    // 輔助：隨機數
-    function r(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
-    
-    // 輔助：設定題目文字
-    function setProblem(text) { document.getElementById('problem-text').innerText = text; }
-
-    // 輔助：生成混合運算 HTML
-    function generateStepHTML(hint, s1, s2) {
-        return `
-            <div style="color:#666; margin-bottom:10px;">💡 提示：${hint}</div>
-            <div class="step-box">
-                <strong>Step 1:</strong><br> ${s1}
-            </div>
-            <div class="step-box" style="border-left-color: var(--success-color);">
-                <strong>Step 2:</strong><br> ${s2}
-            </div>
-        `;
     }
 
     function checkAnswer() {
@@ -427,26 +443,42 @@
         const userAnswer = parseInt(userVal);
         const feedback = document.getElementById('mini-feedback');
         
-        // 準備解題思路內容 (但先不彈出)
         prepareExplanation();
 
         if (userAnswer === correctAnswer) {
-            feedback.innerHTML = "<span style='color:green'>🎉 答對了！太棒了！</span>";
+            // 答對：加 10 分
+            currentSessionScore += 10;
+            
+            // 檢查是否破紀錄
+            let isNewRecord = false;
+            if (currentSessionScore > highScores[currentMode]) {
+                highScores[currentMode] = currentSessionScore;
+                saveHighScores(); // 儲存到 localStorage
+                isNewRecord = true;
+            }
+            
+            updateScoreUI();
+
+            if (isNewRecord && currentSessionScore > 10) { // 第一題不算破紀錄
+                feedback.innerHTML = "<span style='color:#d0021b; font-size:1.3rem'>🏆 破紀錄啦！太強了！</span>";
+            } else {
+                feedback.innerHTML = "<span style='color:green'>🎉 答對了！ (+10分)</span>";
+            }
+
             document.getElementById('check-btn').style.display = 'none';
             document.getElementById('next-btn').style.display = 'inline-block';
-            // 答對時，顯示思路按鈕讓想看的人看
             document.getElementById('explain-trigger').style.display = 'inline-block'; 
         } else {
-            feedback.innerHTML = "<span style='color:red'>💪 差一點點，看看解題思路吧！</span>";
-            // 答錯時，直接顯示思路按鈕，並強烈建議點擊
+            // 答錯
+            feedback.innerHTML = "<span style='color:red'>💪 加油，看看解題思路！</span>";
             document.getElementById('explain-trigger').style.display = 'inline-block';
             document.getElementById('explain-trigger').innerText = "💡 點我看怎麼算";
-            
-            // 選項：如果您希望答錯直接彈出，可以把下面這行註解打開
-            // openModal(); 
         }
     }
 
+    // --- 輔助函數 (與之前相同) ---
+    function r(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+    function setProblem(text) { document.getElementById('problem-text').innerText = text; }
     function resetUI() {
         document.getElementById('mini-feedback').innerHTML = "";
         document.getElementById('check-btn').style.display = 'inline-block';
@@ -454,67 +486,39 @@
         document.getElementById('explain-trigger').style.display = 'none';
         document.getElementById('explain-trigger').innerText = "💡 查看解題思路";
     }
-
-    // 準備解題內容 HTML
+    function generateStepHTML(hint, s1, s2) {
+        return `<div style="color:#666; margin-bottom:10px;">💡 提示：${hint}</div><div class="step-box"><strong>Step 1:</strong><br> ${s1}</div><div class="step-box" style="border-left-color: var(--success-color);"><strong>Step 2:</strong><br> ${s2}</div>`;
+    }
     function prepareExplanation() {
         if (currentMode === 'mixed') {
             currentExplanationHTML = mixedProblem.html;
         } else {
-            // 基礎運算解析
             let logic = "";
             if(currentMode === 'add') logic = `把 ${num1} 和 ${num2} 合起來。`;
             if(currentMode === 'subtract') logic = `從 ${num1} 拿走 ${num2}。`;
             if(currentMode === 'multiply') logic = `${num1} 個 ${num2} 相加。`;
-            if(currentMode === 'divide') logic = `${num1} 分成 ${num2} 份，每份有多少？`;
-            
-            currentExplanationHTML = `
-                <p style="font-size:1.1rem;">${logic}</p>
-                <div class="step-box">
-                    算式： ${document.getElementById('problem-text').innerText.replace('?', correctAnswer)}
-                </div>
-            `;
+            if(currentMode === 'divide') logic = `${num1} 分成 ${num2} 份。`;
+            currentExplanationHTML = `<p style="font-size:1.1rem;">${logic}</p><div class="step-box">答案是： ${correctAnswer}</div>`;
         }
     }
 
-    // ===========================
-    //      彈出視窗控制邏輯
-    // ===========================
-    
+    // Modal 控制
     function openModal() {
-        // 1. 把內容填入 Modal
         document.getElementById('modal-body').innerHTML = currentExplanationHTML;
-        
-        // 2. 顯示 Modal
         const modal = document.getElementById('explanation-modal');
-        modal.style.display = 'flex'; // 先設為 flex 讓它存在於 DOM
-        
-        // 3. 強制重繪後加 active class 以觸發 CSS transition
-        setTimeout(() => {
-            modal.classList.add('active');
-        }, 10);
-
-        // 4. 收起 iPad 鍵盤 (UX 優化)
+        modal.style.display = 'flex';
+        setTimeout(() => modal.classList.add('active'), 10);
         document.getElementById('answer-input').blur();
     }
-
     function closeModal() {
         const modal = document.getElementById('explanation-modal');
         modal.classList.remove('active');
-        
-        // 等動畫結束再隱藏 display
-        setTimeout(() => {
-            modal.style.display = 'none';
-        }, 300);
+        setTimeout(() => modal.style.display = 'none', 300);
     }
-
-    // 點擊背景關閉
     function closeModalOutside(event) {
-        if (event.target.id === 'explanation-modal') {
-            closeModal();
-        }
+        if (event.target.id === 'explanation-modal') closeModal();
     }
 
 </script>
-
 </body>
 </html>
