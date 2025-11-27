@@ -322,7 +322,8 @@
             justify-content: center;
         }
 
-        .key-btn:active {
+        .key-btn:active,
+        .key-btn.pressed {
             transform: translateY(4px);
             box-shadow: none;
             background-color: #f0f0f0;
@@ -334,7 +335,8 @@
             box-shadow: 0 4px 0 #bbdefb;
         }
 
-        .key-btn.action-key:active {
+        .key-btn.action-key:active,
+        .key-btn.action-key.pressed {
             background-color: #bbdefb;
         }
 
@@ -345,7 +347,8 @@
             box-shadow: 0 4px 0 #64a81a;
         }
 
-        .key-btn.enter-key:active {
+        .key-btn.enter-key:active,
+        .key-btn.enter-key.pressed {
             background-color: #64a81a;
             box-shadow: none;
         }
@@ -454,10 +457,33 @@
         let currentSessionScore = 0;
         let highScores = { 'add': 0, 'subtract': 0, 'multiply': 0, 'divide': 0, 'mixed': 0 };
 
-        window.onload = function () { loadHighScores(); updateMenuScores(); };
+        window.onload = function () {
+            loadHighScores();
+            updateMenuScores();
+            initTouchFeedback();
+        };
         function loadHighScores() { const saved = localStorage.getItem('mathTutorHighScores'); if (saved) highScores = JSON.parse(saved); }
         function saveHighScores() { localStorage.setItem('mathTutorHighScores', JSON.stringify(highScores)); }
         function updateMenuScores() { for (const [m, s] of Object.entries(highScores)) { const el = document.getElementById(`score-${m}`); if (el) el.innerText = `紀錄: ${s}`; } }
+
+        function initTouchFeedback() {
+            const keys = document.querySelectorAll('.key-btn');
+            keys.forEach(btn => {
+                btn.addEventListener('touchstart', function (e) {
+                    // e.preventDefault(); // Optional: might prevent click if not careful, but good for stopping scroll on keys
+                    this.classList.add('pressed');
+                }, { passive: true });
+
+                btn.addEventListener('touchend', function (e) {
+                    this.classList.remove('pressed');
+                });
+
+                // Also handle touchcancel just in case
+                btn.addEventListener('touchcancel', function (e) {
+                    this.classList.remove('pressed');
+                });
+            });
+        }
 
         function startPractice(mode) {
             currentMode = mode;
