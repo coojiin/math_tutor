@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-Hant-TW">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -33,7 +34,7 @@
             width: 90%;
             max-width: 700px;
             border-radius: 20px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
             padding: 25px;
             text-align: center;
             transition: all 0.3s ease;
@@ -109,20 +110,34 @@
             background-color: #fdf8ff;
         }
 
-        .mode-btn:active { transform: scale(0.98); background-color: #eee; }
-        .mode-btn.mixed-mode:active { background-color: var(--accent-color); color: white; }
+        .mode-btn:active {
+            transform: scale(0.98);
+            background-color: #eee;
+        }
 
-        #practice-area { display: none; }
+        .mode-btn.mixed-mode:active {
+            background-color: var(--accent-color);
+            color: white;
+        }
+
+        #practice-area {
+            display: none;
+        }
 
         .problem-display {
-            font-size: 2.5rem; /* 稍微調小以適應長算式 */
+            font-size: 2.5rem;
+            /* 稍微調小以適應長算式 */
             font-weight: bold;
             margin: 10px 0 20px 0;
             color: #2c3e50;
             white-space: nowrap;
         }
-        
-        @media (max-width: 400px) { .problem-display { font-size: 1.8rem; } }
+
+        @media (max-width: 400px) {
+            .problem-display {
+                font-size: 1.8rem;
+            }
+        }
 
         input[type="number"] {
             width: 140px;
@@ -134,10 +149,16 @@
             outline: none;
             -moz-appearance: textfield;
         }
-        
+
         input::-webkit-outer-spin-button,
-        input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-        input:focus { border-color: var(--primary-color); }
+        input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        input:focus {
+            border-color: var(--primary-color);
+        }
 
         .action-btn {
             background-color: var(--secondary-color);
@@ -153,15 +174,18 @@
             max-width: 280px;
         }
 
-        .action-btn:active { transform: translateY(4px); box-shadow: none; }
+        .action-btn:active {
+            transform: translateY(4px);
+            box-shadow: none;
+        }
 
         #mini-feedback {
             margin-top: 15px;
             font-size: 1.2rem;
             font-weight: bold;
-            height: 30px; 
+            height: 30px;
         }
-        
+
         .explain-btn {
             background-color: #fff;
             border: 2px solid #999;
@@ -171,342 +195,522 @@
             margin-top: 10px;
             cursor: pointer;
             font-size: 1rem;
-            display: none; 
+            display: none;
         }
-        
+
         /* Modal */
         .modal-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background-color: rgba(0, 0, 0, 0.6); z-index: 9999;
-            display: none; justify-content: center; align-items: center;
-            opacity: 0; transition: opacity 0.3s ease; backdrop-filter: blur(3px);
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6);
+            z-index: 9999;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            backdrop-filter: blur(3px);
         }
-        .modal-overlay.active { display: flex; opacity: 1; }
+
+        .modal-overlay.active {
+            display: flex;
+            opacity: 1;
+        }
+
         .modal-content {
-            background-color: #fff; width: 85%; max-width: 500px; max-height: 80vh;
-            overflow-y: auto; border-radius: 20px; padding: 25px;
-            transform: scale(0.8); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            box-shadow: 0 20px 50px rgba(0,0,0,0.3); text-align: left;
+            background-color: #fff;
+            width: 85%;
+            max-width: 500px;
+            max-height: 80vh;
+            overflow-y: auto;
+            border-radius: 20px;
+            padding: 25px;
+            transform: scale(0.8);
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+            text-align: left;
         }
-        .modal-overlay.active .modal-content { transform: scale(1); }
+
+        .modal-overlay.active .modal-content {
+            transform: scale(1);
+        }
+
         .modal-header {
-            display: flex; justify-content: space-between; align-items: center;
-            border-bottom: 2px solid #f0f0f0; padding-bottom: 10px; margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #f0f0f0;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
         }
-        .modal-title { font-size: 1.4rem; font-weight: bold; color: var(--primary-color); }
+
+        .modal-title {
+            font-size: 1.4rem;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+
         .close-modal-btn {
-            background: #eee; border: none; width: 35px; height: 35px; border-radius: 50%;
-            font-size: 1.2rem; cursor: pointer; display: flex; align-items: center; justify-content: center;
+            background: #eee;
+            border: none;
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            font-size: 1.2rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
+
         .step-box {
-            background: #f9f9f9; padding: 15px; border-radius: 10px;
-            border-left: 5px solid var(--accent-color); margin-bottom: 15px;
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 10px;
+            border-left: 5px solid var(--accent-color);
+            margin-bottom: 15px;
         }
+
         .back-btn {
-            background: none; border: none; color: #999; margin-top: 20px;
-            font-size: 1rem; text-decoration: underline; cursor: pointer;
+            background: none;
+            border: none;
+            color: #999;
+            margin-top: 20px;
+            font-size: 1rem;
+            text-decoration: underline;
+            cursor: pointer;
         }
-        @keyframes pop { 50% { transform: scale(1.2); } }
-        .new-record-anim { animation: pop 0.3s ease-in-out; color: #d0021b; }
+
+        @keyframes pop {
+            50% {
+                transform: scale(1.2);
+            }
+        }
+
+        .new-record-anim {
+            animation: pop 0.3s ease-in-out;
+            color: #d0021b;
+        }
+
+        /* Virtual Keypad Styles */
+        .keypad-container {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            max-width: 320px;
+            margin: 20px auto 0;
+        }
+
+        .key-btn {
+            background-color: white;
+            border: none;
+            border-radius: 15px;
+            padding: 15px 0;
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #555;
+            box-shadow: 0 4px 0 #e0e0e0;
+            cursor: pointer;
+            transition: all 0.1s;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .key-btn:active {
+            transform: translateY(4px);
+            box-shadow: none;
+            background-color: #f0f0f0;
+        }
+
+        .key-btn.action-key {
+            background-color: #e3f2fd;
+            color: var(--primary-color);
+            box-shadow: 0 4px 0 #bbdefb;
+        }
+
+        .key-btn.action-key:active {
+            background-color: #bbdefb;
+        }
+
+        .key-btn.enter-key {
+            grid-column: span 3;
+            background-color: var(--success-color);
+            color: white;
+            box-shadow: 0 4px 0 #64a81a;
+        }
+
+        .key-btn.enter-key:active {
+            background-color: #64a81a;
+            box-shadow: none;
+        }
+
+        /* Responsive Adjustments */
+        @media (min-width: 600px) {
+            .keypad-container {
+                gap: 20px;
+                max-width: 380px;
+            }
+
+            .key-btn {
+                font-size: 1.8rem;
+                padding: 20px 0;
+            }
+        }
     </style>
 </head>
+
 <body>
 
-<div class="container">
-    <!-- 首頁選單 -->
-    <div id="home-menu">
-        <h1>🏆 數學挑戰賽</h1>
-        <p>打破紀錄，成為數學小博士！</p>
-        <div class="menu-grid">
-            <button class="mode-btn" onclick="startPractice('add')">➕ 加法 <span class="high-score" id="score-add">紀錄: 0</span></button>
-            <button class="mode-btn" onclick="startPractice('subtract')">➖ 減法 <span class="high-score" id="score-subtract">紀錄: 0</span></button>
-            <button class="mode-btn" onclick="startPractice('multiply')">✖️ 乘法 <span class="high-score" id="score-multiply">紀錄: 0</span></button>
-            <button class="mode-btn" onclick="startPractice('divide')">➗ 除法 <span class="high-score" id="score-divide">紀錄: 0</span></button>
-            <button class="mode-btn mixed-mode" onclick="startPractice('mixed')">🚀 混合運算 (進階) <span class="high-score" id="score-mixed">紀錄: 0</span></button>
-        </div>
-    </div>
-
-    <!-- 練習區 -->
-    <div id="practice-area">
-        <div class="score-board">
-            <div class="score-item">
-                <span>✨ 本次得分</span>
-                <span class="score-val" id="current-score">0</span>
-            </div>
-            <div class="score-item" style="text-align:right;">
-                <span>🏆 最高紀錄</span>
-                <span class="score-val" id="best-score">0</span>
+    <div class="container">
+        <!-- 首頁選單 -->
+        <div id="home-menu">
+            <h1>🏆 數學挑戰賽</h1>
+            <p>打破紀錄，成為數學小博士！</p>
+            <div class="menu-grid">
+                <button class="mode-btn" onclick="startPractice('add')">➕ 加法 <span class="high-score" id="score-add">紀錄:
+                        0</span></button>
+                <button class="mode-btn" onclick="startPractice('subtract')">➖ 減法 <span class="high-score"
+                        id="score-subtract">紀錄: 0</span></button>
+                <button class="mode-btn" onclick="startPractice('multiply')">✖️ 乘法 <span class="high-score"
+                        id="score-multiply">紀錄: 0</span></button>
+                <button class="mode-btn" onclick="startPractice('divide')">➗ 除法 <span class="high-score"
+                        id="score-divide">紀錄: 0</span></button>
+                <button class="mode-btn mixed-mode" onclick="startPractice('mixed')">🚀 混合運算 (進階) <span
+                        class="high-score" id="score-mixed">紀錄: 0</span></button>
             </div>
         </div>
 
-        <h3 id="mode-title" style="color:#999; margin:0; font-size:1rem;">練習模式</h3>
-        <div class="problem-display" id="problem-text"></div>
-        <div><input type="number" id="answer-input" placeholder="?" pattern="[0-9]*" inputmode="numeric"></div>
-        <div id="mini-feedback"></div>
-        <button class="action-btn" id="check-btn" onclick="checkAnswer()">送出答案</button>
-        <button class="explain-btn" id="explain-trigger" onclick="openModal()">💡 查看解題思路</button>
-        <button class="action-btn" id="next-btn" onclick="generateProblem()" style="display:none; background-color: var(--primary-color);">下一題 ➜</button>
-        <br>
-        <button class="back-btn" onclick="goHome()">結束練習 (回主選單)</button>
-    </div>
-</div>
+        <!-- 練習區 -->
+        <div id="practice-area">
+            <div class="score-board">
+                <div class="score-item">
+                    <span>✨ 本次得分</span>
+                    <span class="score-val" id="current-score">0</span>
+                </div>
+                <div class="score-item" style="text-align:right;">
+                    <span>🏆 最高紀錄</span>
+                    <span class="score-val" id="best-score">0</span>
+                </div>
+            </div>
 
-<div id="explanation-modal" class="modal-overlay" onclick="closeModalOutside(event)">
-    <div class="modal-content">
-        <div class="modal-header">
-            <span class="modal-title">📝 解題思路</span>
-            <button class="close-modal-btn" onclick="closeModal()">✕</button>
+            <h3 id="mode-title" style="color:#999; margin:0; font-size:1rem;">練習模式</h3>
+            <div class="problem-display" id="problem-text"></div>
+            <div><input type="number" id="answer-input" placeholder="?" readonly></div>
+
+            <!-- Virtual Keypad -->
+            <div class="keypad-container">
+                <button class="key-btn" onclick="appendNumber(7)">7</button>
+                <button class="key-btn" onclick="appendNumber(8)">8</button>
+                <button class="key-btn" onclick="appendNumber(9)">9</button>
+                <button class="key-btn" onclick="appendNumber(4)">4</button>
+                <button class="key-btn" onclick="appendNumber(5)">5</button>
+                <button class="key-btn" onclick="appendNumber(6)">6</button>
+                <button class="key-btn" onclick="appendNumber(1)">1</button>
+                <button class="key-btn" onclick="appendNumber(2)">2</button>
+                <button class="key-btn" onclick="appendNumber(3)">3</button>
+                <button class="key-btn action-key" onclick="clearInput()">C</button>
+                <button class="key-btn" onclick="appendNumber(0)">0</button>
+                <button class="key-btn action-key" onclick="backspace()">⌫</button>
+                <button class="key-btn enter-key" id="keypad-enter" onclick="checkAnswer()">送出答案</button>
+            </div>
+
+            <div id="mini-feedback"></div>
+            <!-- Original check-btn hidden as we have one in keypad now, but keeping logic compatible -->
+            <button class="action-btn" id="check-btn" onclick="checkAnswer()" style="display:none;">送出答案</button>
+            <button class="explain-btn" id="explain-trigger" onclick="openModal()">💡 查看解題思路</button>
+            <button class="action-btn" id="next-btn" onclick="generateProblem()"
+                style="display:none; background-color: var(--primary-color);">下一題 ➜</button>
+            <br>
+            <button class="back-btn" onclick="goHome()">結束練習 (回主選單)</button>
         </div>
-        <div id="modal-body"></div>
-        <div style="text-align: center; margin-top: 20px;">
-            <button class="action-btn" onclick="closeModal()" style="padding: 10px 30px; font-size: 1rem; width:auto;">我知道了！</button>
+    </div>
+
+    <div id="explanation-modal" class="modal-overlay" onclick="closeModalOutside(event)">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span class="modal-title">📝 解題思路</span>
+                <button class="close-modal-btn" onclick="closeModal()">✕</button>
+            </div>
+            <div id="modal-body"></div>
+            <div style="text-align: center; margin-top: 20px;">
+                <button class="action-btn" onclick="closeModal()"
+                    style="padding: 10px 30px; font-size: 1rem; width:auto;">我知道了！</button>
+            </div>
         </div>
     </div>
-</div>
 
-<script>
-    let currentMode = '';
-    let num1=0, num2=0;
-    let mixedProblem = null;
-    let correctAnswer = 0;
-    let currentExplanationHTML = '';
-    let currentSessionScore = 0;
-    let highScores = {'add':0, 'subtract':0, 'multiply':0, 'divide':0, 'mixed':0};
+    <script>
+        let currentMode = '';
+        let num1 = 0, num2 = 0;
+        let mixedProblem = null;
+        let correctAnswer = 0;
+        let currentExplanationHTML = '';
+        let currentSessionScore = 0;
+        let highScores = { 'add': 0, 'subtract': 0, 'multiply': 0, 'divide': 0, 'mixed': 0 };
 
-    window.onload = function() { loadHighScores(); updateMenuScores(); };
-    function loadHighScores() { const saved = localStorage.getItem('mathTutorHighScores'); if(saved) highScores = JSON.parse(saved); }
-    function saveHighScores() { localStorage.setItem('mathTutorHighScores', JSON.stringify(highScores)); }
-    function updateMenuScores() { for(const [m, s] of Object.entries(highScores)) { const el = document.getElementById(`score-${m}`); if(el) el.innerText = `紀錄: ${s}`; } }
+        window.onload = function () { loadHighScores(); updateMenuScores(); };
+        function loadHighScores() { const saved = localStorage.getItem('mathTutorHighScores'); if (saved) highScores = JSON.parse(saved); }
+        function saveHighScores() { localStorage.setItem('mathTutorHighScores', JSON.stringify(highScores)); }
+        function updateMenuScores() { for (const [m, s] of Object.entries(highScores)) { const el = document.getElementById(`score-${m}`); if (el) el.innerText = `紀錄: ${s}`; } }
 
-    function startPractice(mode) {
-        currentMode = mode;
-        currentSessionScore = 0;
-        document.getElementById('home-menu').style.display = 'none';
-        document.getElementById('practice-area').style.display = 'block';
-        const titles = {'add':'加法練習','subtract':'減法練習','multiply':'乘法練習','divide':'除法練習','mixed':'混合運算 (隨機題型)'};
-        document.getElementById('mode-title').innerText = titles[mode];
-        updateScoreUI();
-        generateProblem();
-    }
-
-    function updateScoreUI() {
-        const currEl = document.getElementById('current-score');
-        currEl.innerText = currentSessionScore;
-        document.getElementById('best-score').innerText = highScores[currentMode];
-        if(currentSessionScore > highScores[currentMode] && highScores[currentMode] > 0) currEl.classList.add('new-record-anim');
-        else currEl.classList.remove('new-record-anim');
-    }
-
-    function goHome() {
-        document.getElementById('practice-area').style.display = 'none';
-        document.getElementById('home-menu').style.display = 'block';
-        updateMenuScores();
-        resetUI();
-    }
-
-    function generateProblem() {
-        resetUI();
-        const input = document.getElementById('answer-input');
-        input.value = '';
-        input.focus();
-        if(currentMode === 'mixed') generateMixedProblem();
-        else generateBasicProblem();
-    }
-
-    // 基礎四則運算 (保持不變)
-    function generateBasicProblem() {
-        switch(currentMode) {
-            case 'add': num1=r(10,99); num2=r(10,99); correctAnswer=num1+num2; setProblem(`${num1} + ${num2} = ?`); break;
-            case 'subtract': num1=r(10,99); num2=r(1,num1-1); correctAnswer=num1-num2; setProblem(`${num1} - ${num2} = ?`); break;
-            case 'multiply': num1=r(2,9); num2=r(2,9); correctAnswer=num1*num2; setProblem(`${num1} × ${num2} = ?`); break;
-            case 'divide': num2=r(2,9); correctAnswer=r(2,9); num1=num2*correctAnswer; setProblem(`${num1} ÷ ${num2} = ?`); break;
-        }
-    }
-
-    // --- 新版混合運算邏輯 ---
-    function generateMixedProblem() {
-        // 0: 純加減 (A ± B ± C)
-        // 1: 乘法在前 (A x B ± C)
-        // 2: 乘法在後 (A ± B x C)
-        // 3: 除法在前 (A ÷ B ± C)
-        // 4: 除法在後 (A ± B ÷ C)
-        const type = Math.floor(Math.random() * 5); 
-
-        let n1, n2, n3, op2, midVal;
-
-        if (type === 0) { 
-            // 純加減：雙位數
-            n1 = r(20, 90); n2 = r(10, 50); n3 = r(10, 50);
-            // 隨機決定運算符
-            let op1 = Math.random() > 0.5 ? '+' : '-';
-            op2 = Math.random() > 0.5 ? '+' : '-';
-            
-            // 確保不出現負數
-            if (op1 === '-' && n1 < n2) n1 += n2; // 修正 n1
-            let val1 = (op1 === '+') ? n1 + n2 : n1 - n2;
-            
-            if (op2 === '-' && val1 < n3) {
-                 // 如果第二步會變成負數，改為加法，或者調整 n3
-                 op2 = '+'; 
-            }
-            correctAnswer = (op2 === '+') ? val1 + n3 : val1 - n3;
-            
-            mixedProblem = {
-                text: `${n1} ${op1} ${n2} ${op2} ${n3} = ?`,
-                html: generateStepHTML('只有加減法時，從左算到右', 
-                    `${n1} ${op1} ${n2} = ${val1}`, 
-                    `${val1} ${op2} ${n3} = ${correctAnswer}`)
-            };
-
-        } else if (type === 1) { 
-            // 乘法在前：個位x個位 ± 雙位
-            n1 = r(2, 9); n2 = r(2, 9); midVal = n1 * n2;
-            n3 = r(10, 90);
-            op2 = Math.random() > 0.5 ? '+' : '-';
-
-            // 確保不負數
-            if (op2 === '-' && midVal < n3) { 
-                // 交換數值或改為加法，這裡簡單處理：把 n3 變小
-                n3 = r(1, midVal - 1);
-            }
-            correctAnswer = (op2 === '+') ? midVal + n3 : midVal - n3;
-
-            mixedProblem = {
-                text: `${n1} × ${n2} ${op2} ${n3} = ?`,
-                html: generateStepHTML('由左而右，先算乘法', 
-                    `${n1} × ${n2} = ${midVal}`, 
-                    `${midVal} ${op2} ${n3} = ${correctAnswer}`)
-            };
-
-        } else if (type === 2) { 
-            // 乘法在後：雙位 ± 個位x個位
-            n2 = r(2, 9); n3 = r(2, 9); midVal = n2 * n3; // 後半段的值
-            n1 = r(10, 90); // 前半段雙位數
-            let op1 = Math.random() > 0.5 ? '+' : '-';
-
-            if (op1 === '-' && n1 < midVal) {
-                n1 = midVal + r(5, 20); // 確保夠減
-            }
-            correctAnswer = (op1 === '+') ? n1 + midVal : n1 - midVal;
-
-            mixedProblem = {
-                text: `${n1} ${op1} ${n2} × ${n3} = ?`,
-                html: generateStepHTML('注意！先乘除，後加減', 
-                    `先算後面： ${n2} × ${n3} = ${midVal}`, 
-                    `再算前面： ${n1} ${op1} ${midVal} = ${correctAnswer}`)
-            };
-
-        } else if (type === 3) { 
-            // 除法在前：雙位÷個位 ± 雙位
-            n2 = r(2, 9); let q = r(2, 9); // 商
-            n1 = n2 * q; // 被除數
-            n3 = r(10, 90);
-            op2 = Math.random() > 0.5 ? '+' : '-';
-
-            if (op2 === '-' && q < n3) op2 = '+'; // 商通常很小，減法容易負，多用加法或確保 n3 很小
-            if (op2 === '-' && q > n3) correctAnswer = q - n3;
-            else { op2 = '+'; correctAnswer = q + n3; }
-
-            mixedProblem = {
-                text: `${n1} ÷ ${n2} ${op2} ${n3} = ?`,
-                html: generateStepHTML('由左而右，先算除法', 
-                    `${n1} ÷ ${n2} = ${q}`, 
-                    `${q} ${op2} ${n3} = ${correctAnswer}`)
-            };
-
-        } else { 
-            // 除法在後：雙位 ± 雙位÷個位
-            n2 = r(2, 9); let q = r(2, 9); // 商
-            let divPart = n2 * q; // 這部分是被除數，但在算式中它是中間的數 (A ± B ÷ C)
-            // 修正變數命名以符合 A ± B ÷ C 格式 (n1 ± n2 ÷ n3)
-            // 這裡 B = n2, C = n3, B/C = q
-            let C = r(2, 9);
-            let Q = r(2, 9);
-            let B = C * Q;
-            let A = r(10, 90); // 雙位數
-
-            let op1 = Math.random() > 0.5 ? '+' : '-';
-            if (op1 === '-' && A < Q) A = Q + r(5, 20);
-
-            correctAnswer = (op1 === '+') ? A + Q : A - Q;
-
-            mixedProblem = {
-                text: `${A} ${op1} ${B} ÷ ${C} = ?`,
-                html: generateStepHTML('看到除號要先算！(先乘除後加減)', 
-                    `先算後面： ${B} ÷ ${C} = ${Q}`, 
-                    `再算前面： ${A} ${op1} ${Q} = ${correctAnswer}`)
-            };
-        }
-        setProblem(mixedProblem.text);
-    }
-
-    function checkAnswer() {
-        const userVal = document.getElementById('answer-input').value;
-        if(userVal === '') { alert("請輸入數字"); return; }
-        const userAnswer = parseInt(userVal);
-        const feedback = document.getElementById('mini-feedback');
-        prepareExplanation();
-
-        if (userAnswer === correctAnswer) {
-            currentSessionScore += 10;
-            let isNewRecord = false;
-            if (currentSessionScore > highScores[currentMode]) {
-                highScores[currentMode] = currentSessionScore;
-                saveHighScores();
-                isNewRecord = true;
-            }
+        function startPractice(mode) {
+            currentMode = mode;
+            currentSessionScore = 0;
+            document.getElementById('home-menu').style.display = 'none';
+            document.getElementById('practice-area').style.display = 'block';
+            const titles = { 'add': '加法練習', 'subtract': '減法練習', 'multiply': '乘法練習', 'divide': '除法練習', 'mixed': '混合運算 (隨機題型)' };
+            document.getElementById('mode-title').innerText = titles[mode];
             updateScoreUI();
-            if (isNewRecord && currentSessionScore > 10) feedback.innerHTML = "<span style='color:#d0021b; font-size:1.3rem'>🏆 破紀錄啦！太強了！</span>";
-            else feedback.innerHTML = "<span style='color:green'>🎉 答對了！ (+10分)</span>";
-            document.getElementById('check-btn').style.display = 'none';
-            document.getElementById('next-btn').style.display = 'inline-block';
-            document.getElementById('explain-trigger').style.display = 'inline-block'; 
-        } else {
-            feedback.innerHTML = "<span style='color:red'>💪 加油，看看解題思路！</span>";
-            document.getElementById('explain-trigger').style.display = 'inline-block';
-            document.getElementById('explain-trigger').innerText = "💡 點我看怎麼算";
+            generateProblem();
         }
-    }
 
-    function r(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
-    function setProblem(text) { document.getElementById('problem-text').innerText = text; }
-    function resetUI() {
-        document.getElementById('mini-feedback').innerHTML = "";
-        document.getElementById('check-btn').style.display = 'inline-block';
-        document.getElementById('next-btn').style.display = 'none';
-        document.getElementById('explain-trigger').style.display = 'none';
-        document.getElementById('explain-trigger').innerText = "💡 查看解題思路";
-    }
-    function generateStepHTML(hint, s1, s2) {
-        return `<div style="color:#666; margin-bottom:10px;">💡 提示：${hint}</div><div class="step-box"><strong>Step 1:</strong><br> ${s1}</div><div class="step-box" style="border-left-color: var(--success-color);"><strong>Step 2:</strong><br> ${s2}</div>`;
-    }
-    function prepareExplanation() {
-        if (currentMode === 'mixed') currentExplanationHTML = mixedProblem.html;
-        else {
-            let logic = "";
-            if(currentMode === 'add') logic = `把 ${num1} 和 ${num2} 合起來。`;
-            if(currentMode === 'subtract') logic = `從 ${num1} 拿走 ${num2}。`;
-            if(currentMode === 'multiply') logic = `${num1} 個 ${num2} 相加。`;
-            if(currentMode === 'divide') logic = `${num1} 分成 ${num2} 份。`;
-            currentExplanationHTML = `<p style="font-size:1.1rem;">${logic}</p><div class="step-box">答案是： ${correctAnswer}</div>`;
+        function updateScoreUI() {
+            const currEl = document.getElementById('current-score');
+            currEl.innerText = currentSessionScore;
+            document.getElementById('best-score').innerText = highScores[currentMode];
+            if (currentSessionScore > highScores[currentMode] && highScores[currentMode] > 0) currEl.classList.add('new-record-anim');
+            else currEl.classList.remove('new-record-anim');
         }
-    }
 
-    function openModal() {
-        document.getElementById('modal-body').innerHTML = currentExplanationHTML;
-        const modal = document.getElementById('explanation-modal');
-        modal.style.display = 'flex';
-        setTimeout(() => modal.classList.add('active'), 10);
-        document.getElementById('answer-input').blur();
-    }
-    function closeModal() {
-        const modal = document.getElementById('explanation-modal');
-        modal.classList.remove('active');
-        setTimeout(() => modal.style.display = 'none', 300);
-    }
-    function closeModalOutside(event) {
-        if (event.target.id === 'explanation-modal') closeModal();
-    }
-</script>
+        function goHome() {
+            document.getElementById('practice-area').style.display = 'none';
+            document.getElementById('home-menu').style.display = 'block';
+            updateMenuScores();
+            resetUI();
+        }
+
+        function generateProblem() {
+            resetUI();
+            const input = document.getElementById('answer-input');
+            input.value = '';
+            // input.focus(); // Removed focus to prevent keyboard
+            if (currentMode === 'mixed') generateMixedProblem();
+            else generateBasicProblem();
+        }
+
+        // 基礎四則運算 (保持不變)
+        function generateBasicProblem() {
+            switch (currentMode) {
+                case 'add': num1 = r(10, 99); num2 = r(10, 99); correctAnswer = num1 + num2; setProblem(`${num1} + ${num2} = ?`); break;
+                case 'subtract': num1 = r(10, 99); num2 = r(1, num1 - 1); correctAnswer = num1 - num2; setProblem(`${num1} - ${num2} = ?`); break;
+                case 'multiply': num1 = r(2, 9); num2 = r(2, 9); correctAnswer = num1 * num2; setProblem(`${num1} × ${num2} = ?`); break;
+                case 'divide': num2 = r(2, 9); correctAnswer = r(2, 9); num1 = num2 * correctAnswer; setProblem(`${num1} ÷ ${num2} = ?`); break;
+            }
+        }
+
+        // --- 新版混合運算邏輯 ---
+        function generateMixedProblem() {
+            // 0: 純加減 (A ± B ± C)
+            // 1: 乘法在前 (A x B ± C)
+            // 2: 乘法在後 (A ± B x C)
+            // 3: 除法在前 (A ÷ B ± C)
+            // 4: 除法在後 (A ± B ÷ C)
+            const type = Math.floor(Math.random() * 5);
+
+            let n1, n2, n3, op2, midVal;
+
+            if (type === 0) {
+                // 純加減：雙位數
+                n1 = r(20, 90); n2 = r(10, 50); n3 = r(10, 50);
+                // 隨機決定運算符
+                let op1 = Math.random() > 0.5 ? '+' : '-';
+                op2 = Math.random() > 0.5 ? '+' : '-';
+
+                // 確保不出現負數
+                if (op1 === '-' && n1 < n2) n1 += n2; // 修正 n1
+                let val1 = (op1 === '+') ? n1 + n2 : n1 - n2;
+
+                if (op2 === '-' && val1 < n3) {
+                    // 如果第二步會變成負數，改為加法，或者調整 n3
+                    op2 = '+';
+                }
+                correctAnswer = (op2 === '+') ? val1 + n3 : val1 - n3;
+
+                mixedProblem = {
+                    text: `${n1} ${op1} ${n2} ${op2} ${n3} = ?`,
+                    html: generateStepHTML('只有加減法時，從左算到右',
+                        `${n1} ${op1} ${n2} = ${val1}`,
+                        `${val1} ${op2} ${n3} = ${correctAnswer}`)
+                };
+
+            } else if (type === 1) {
+                // 乘法在前：個位x個位 ± 雙位
+                n1 = r(2, 9); n2 = r(2, 9); midVal = n1 * n2;
+                n3 = r(10, 90);
+                op2 = Math.random() > 0.5 ? '+' : '-';
+
+                // 確保不負數
+                if (op2 === '-' && midVal < n3) {
+                    // 交換數值或改為加法，這裡簡單處理：把 n3 變小
+                    n3 = r(1, midVal - 1);
+                }
+                correctAnswer = (op2 === '+') ? midVal + n3 : midVal - n3;
+
+                mixedProblem = {
+                    text: `${n1} × ${n2} ${op2} ${n3} = ?`,
+                    html: generateStepHTML('由左而右，先算乘法',
+                        `${n1} × ${n2} = ${midVal}`,
+                        `${midVal} ${op2} ${n3} = ${correctAnswer}`)
+                };
+
+            } else if (type === 2) {
+                // 乘法在後：雙位 ± 個位x個位
+                n2 = r(2, 9); n3 = r(2, 9); midVal = n2 * n3; // 後半段的值
+                n1 = r(10, 90); // 前半段雙位數
+                let op1 = Math.random() > 0.5 ? '+' : '-';
+
+                if (op1 === '-' && n1 < midVal) {
+                    n1 = midVal + r(5, 20); // 確保夠減
+                }
+                correctAnswer = (op1 === '+') ? n1 + midVal : n1 - midVal;
+
+                mixedProblem = {
+                    text: `${n1} ${op1} ${n2} × ${n3} = ?`,
+                    html: generateStepHTML('注意！先乘除，後加減',
+                        `先算後面： ${n2} × ${n3} = ${midVal}`,
+                        `再算前面： ${n1} ${op1} ${midVal} = ${correctAnswer}`)
+                };
+
+            } else if (type === 3) {
+                // 除法在前：雙位÷個位 ± 雙位
+                n2 = r(2, 9); let q = r(2, 9); // 商
+                n1 = n2 * q; // 被除數
+                n3 = r(10, 90);
+                op2 = Math.random() > 0.5 ? '+' : '-';
+
+                if (op2 === '-' && q < n3) op2 = '+'; // 商通常很小，減法容易負，多用加法或確保 n3 很小
+                if (op2 === '-' && q > n3) correctAnswer = q - n3;
+                else { op2 = '+'; correctAnswer = q + n3; }
+
+                mixedProblem = {
+                    text: `${n1} ÷ ${n2} ${op2} ${n3} = ?`,
+                    html: generateStepHTML('由左而右，先算除法',
+                        `${n1} ÷ ${n2} = ${q}`,
+                        `${q} ${op2} ${n3} = ${correctAnswer}`)
+                };
+
+            } else {
+                // 除法在後：雙位 ± 雙位÷個位
+                n2 = r(2, 9); let q = r(2, 9); // 商
+                let divPart = n2 * q; // 這部分是被除數，但在算式中它是中間的數 (A ± B ÷ C)
+                // 修正變數命名以符合 A ± B ÷ C 格式 (n1 ± n2 ÷ n3)
+                // 這裡 B = n2, C = n3, B/C = q
+                let C = r(2, 9);
+                let Q = r(2, 9);
+                let B = C * Q;
+                let A = r(10, 90); // 雙位數
+
+                let op1 = Math.random() > 0.5 ? '+' : '-';
+                if (op1 === '-' && A < Q) A = Q + r(5, 20);
+
+                correctAnswer = (op1 === '+') ? A + Q : A - Q;
+
+                mixedProblem = {
+                    text: `${A} ${op1} ${B} ÷ ${C} = ?`,
+                    html: generateStepHTML('看到除號要先算！(先乘除後加減)',
+                        `先算後面： ${B} ÷ ${C} = ${Q}`,
+                        `再算前面： ${A} ${op1} ${Q} = ${correctAnswer}`)
+                };
+            }
+            setProblem(mixedProblem.text);
+        }
+
+        function checkAnswer() {
+            const userVal = document.getElementById('answer-input').value;
+            if (userVal === '') { return; } // Silent return if empty on keypad enter
+            const userAnswer = parseInt(userVal);
+            const feedback = document.getElementById('mini-feedback');
+            prepareExplanation();
+
+            if (userAnswer === correctAnswer) {
+                currentSessionScore += 10;
+                let isNewRecord = false;
+                if (currentSessionScore > highScores[currentMode]) {
+                    highScores[currentMode] = currentSessionScore;
+                    saveHighScores();
+                    isNewRecord = true;
+                }
+                updateScoreUI();
+                if (isNewRecord && currentSessionScore > 10) feedback.innerHTML = "<span style='color:#d0021b; font-size:1.3rem'>🏆 破紀錄啦！太強了！</span>";
+                else feedback.innerHTML = "<span style='color:green'>🎉 答對了！ (+10分)</span>";
+
+                // UI updates
+                document.getElementById('keypad-enter').style.display = 'none'; // Hide Enter on keypad
+                document.getElementById('next-btn').style.display = 'inline-block';
+                document.getElementById('explain-trigger').style.display = 'inline-block';
+            } else {
+                feedback.innerHTML = "<span style='color:red'>💪 加油，看看解題思路！</span>";
+                document.getElementById('explain-trigger').style.display = 'inline-block';
+                document.getElementById('explain-trigger').innerText = "💡 點我看怎麼算";
+                // Shake effect or visual feedback could be added here
+            }
+        }
+
+        // Keypad Functions
+        function appendNumber(num) {
+            const input = document.getElementById('answer-input');
+            if (input.value.length < 6) { // Limit length
+                input.value += num;
+            }
+        }
+
+        function backspace() {
+            const input = document.getElementById('answer-input');
+            input.value = input.value.slice(0, -1);
+        }
+
+        function clearInput() {
+            document.getElementById('answer-input').value = '';
+        }
+
+        function r(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+        function setProblem(text) { document.getElementById('problem-text').innerText = text; }
+        function resetUI() {
+            document.getElementById('mini-feedback').innerHTML = "";
+            document.getElementById('keypad-enter').style.display = 'flex'; // Restore Enter key
+            document.getElementById('keypad-enter').style.gridColumn = 'span 3'; // Restore Grid span
+            document.getElementById('check-btn').style.display = 'none'; // Keep original button hidden
+            document.getElementById('next-btn').style.display = 'none';
+            document.getElementById('explain-trigger').style.display = 'none';
+            document.getElementById('explain-trigger').innerText = "💡 查看解題思路";
+        }
+        function generateStepHTML(hint, s1, s2) {
+            return `<div style="color:#666; margin-bottom:10px;">💡 提示：${hint}</div><div class="step-box"><strong>Step 1:</strong><br> ${s1}</div><div class="step-box" style="border-left-color: var(--success-color);"><strong>Step 2:</strong><br> ${s2}</div>`;
+        }
+        function prepareExplanation() {
+            if (currentMode === 'mixed') currentExplanationHTML = mixedProblem.html;
+            else {
+                let logic = "";
+                if (currentMode === 'add') logic = `把 ${num1} 和 ${num2} 合起來。`;
+                if (currentMode === 'subtract') logic = `從 ${num1} 拿走 ${num2}。`;
+                if (currentMode === 'multiply') logic = `${num1} 個 ${num2} 相加。`;
+                if (currentMode === 'divide') logic = `${num1} 分成 ${num2} 份。`;
+                currentExplanationHTML = `<p style="font-size:1.1rem;">${logic}</p><div class="step-box">答案是： ${correctAnswer}</div>`;
+            }
+        }
+
+        function openModal() {
+            document.getElementById('modal-body').innerHTML = currentExplanationHTML;
+            const modal = document.getElementById('explanation-modal');
+            modal.style.display = 'flex';
+            setTimeout(() => modal.classList.add('active'), 10);
+            document.getElementById('answer-input').blur();
+        }
+        function closeModal() {
+            const modal = document.getElementById('explanation-modal');
+            modal.classList.remove('active');
+            setTimeout(() => modal.style.display = 'none', 300);
+        }
+        function closeModalOutside(event) {
+            if (event.target.id === 'explanation-modal') closeModal();
+        }
+    </script>
 </body>
+
 </html>
