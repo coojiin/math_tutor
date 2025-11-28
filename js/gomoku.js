@@ -1,4 +1,4 @@
-// Gomoku Game Logic (MVC Pattern) - Tournament-Level AI (Alpha-Beta + VCT)
+// Gomoku Game Logic (MVC Pattern) - Tournament-Level AI (Alpha-Beta + VCT + Double Threat Detection)
 
 const GomokuConstants = {
     BOARD_SIZE: 19, // Dynamic
@@ -7,15 +7,17 @@ const GomokuConstants = {
     PLAYER2: 2, // White (AI)
     AI: {
         TIME_LIMIT: 1000,
-        WIN_SCORE: 10000000, // Lower than Infinity to allow depth preference
+        WIN_SCORE: 100000000, // 100M (Absolute Win)
+        VIRTUAL_WIN: 5000000, // 5M (Unstoppable: 3-3, 4-3, 4-4)
         SCORES: {
-            FIVE: 10000000,
-            LIVE_FOUR: 100000,
-            DEAD_FOUR: 10000,
-            LIVE_THREE: 10000,
+            FIVE: 100000000,
+            LIVE_FOUR: 10000000, // Guaranteed Win
+            DOUBLE_THREAT: 5000000, // 3-3, 4-3, 4-4
+            LIVE_THREE: 50000,   // User Request: Live 3 > Rush 4
+            DEAD_FOUR: 10000,    // Rush 4
+            LIVE_TWO: 5000,
             DEAD_THREE: 1000,
-            LIVE_TWO: 100,
-            DEAD_TWO: 10
+            DEAD_TWO: 100
         }
     }
 };
@@ -228,7 +230,6 @@ class GomokuAIEngine {
         await new Promise(resolve => setTimeout(resolve, 20));
 
         // 1. VCT Search (Victory by Continuous Threats)
-        // Look for forced wins first.
         const vctMove = this.vctSearch();
         if (vctMove) {
             console.log("VCT Found!", vctMove);
@@ -241,7 +242,6 @@ class GomokuAIEngine {
     }
 
     // --- VCT Search ---
-    // Simplified VCT: Look for Win in 1, Block Win in 1, Win in 3 (Live 4), Block Win in 3
     vctSearch() {
         const board = this.gameState.board;
         const ai = GomokuConstants.PLAYER2;
@@ -263,17 +263,11 @@ class GomokuAIEngine {
         move = this.findPattern(board, human, "011110");
         if (move) return move;
 
-        // 5. Check AI Dead 4 (Forcing Move) -> Can lead to win?
-        // For full VCT, we would recurse here. For now, we prioritize making Dead 4 if it's safe.
-        // But simply making Dead 4 isn't always good.
-
-        // 6. Check Block Human Dead 4 (Forced Defense)
-        // If human has Dead 4 (e.g. 011112), we MUST block.
-        // Dead 4 patterns: 011112, 211110, 10111, 11011, 11101
+        // 5. Check Block Human Dead 4 (Forced Defense)
         move = this.findDead4Block(board, human);
         if (move) return move;
 
-        // 7. Check Block Human Live 3 (Becomes Live 4)
+        // 6. Check Block Human Live 3 (Becomes Live 4)
         move = this.findPattern(board, human, "01110");
         if (move) return move;
         move = this.findPattern(board, human, "010110");
@@ -285,12 +279,6 @@ class GomokuAIEngine {
     }
 
     findPattern(board, player, patternStr) {
-        // patternStr example: "011110" where 1=player, 0=empty
-        // We need to find a place to put '1' that completes the pattern?
-        // No, findPattern checks if the pattern exists *potentially* or *imminently*.
-        // Actually, for "Win in 1", we look for "1111" and an empty spot.
-
-        // Helper: Check all empty spots. If placing stone creates pattern, return spot.
         const candidates = this.getNeighbors(board, 1);
         for (const move of candidates) {
             board[move.row][move.col] = player;
@@ -304,9 +292,6 @@ class GomokuAIEngine {
     }
 
     findDead4Block(board, player) {
-        // Check if opponent has Dead 4. If so, return the blocking move.
-        // Dead 4 means opponent has 4 stones and 1 empty spot to make 5.
-        // We simulate opponent placing stone. If they get 5, we must block there.
         const candidates = this.getNeighbors(board, 1);
         for (const move of candidates) {
             board[move.row][move.col] = player; // Opponent moves
@@ -320,16 +305,7 @@ class GomokuAIEngine {
     }
 
     checkPatternCreated(board, r, c, player, patternStr) {
-        // Check 4 directions
         const directions = [{ dr: 0, dc: 1 }, { dr: 1, dc: 0 }, { dr: 1, dc: 1 }, { dr: 1, dc: -1 }];
-        // Convert patternStr to regex. 1->x, 0->_, 2->o
-        // But here patternStr uses 1 for player, 0 for empty.
-        // Let's standardize: 'x' = player, '_' = empty, 'o' = opponent.
-
-        // The input patternStr is like "011110" (Live 4).
-        // This means: Empty, Player, Player, Player, Player, Empty.
-        // We just placed a stone at r,c. We check if the line containing r,c matches.
-
         let targetRegex = patternStr.replace(/1/g, 'x').replace(/0/g, '_');
 
         for (const { dr, dc } of directions) {
@@ -378,7 +354,6 @@ class GomokuAIEngine {
         const maxDepth = 10;
 
         let candidates = this.getNeighbors(board, 1);
-        // Initial Sort
         candidates.sort((a, b) => this.evaluatePoint(board, b.row, b.col, GomokuConstants.PLAYER2) - this.evaluatePoint(board, a.row, a.col, GomokuConstants.PLAYER2));
         candidates = candidates || [];
         if (candidates.length === 0) return null;
@@ -406,8 +381,7 @@ class GomokuAIEngine {
 
             if (Date.now() - startTime <= GomokuConstants.AI.TIME_LIMIT) {
                 bestMove = currentBestMove;
-                // If found winning move, stop
-                if (currentBestScore >= GomokuConstants.AI.SCORES.WIN_SCORE) break;
+                if (currentBestScore >= GomokuConstants.AI.SCORES.WIN_SCORE / 2) break; // Found winning path
             } else {
                 if (!bestMove) bestMove = currentBestMove;
                 break;
@@ -430,18 +404,11 @@ class GomokuAIEngine {
         }
 
         if (depth === 0) {
-            // Static Evaluation from current player's perspective
-            const score = this.evaluateBoard(this.gameState.board, player);
-            return score;
+            return this.evaluateBoard(this.gameState.board, player);
         }
 
         const candidates = this.getNeighbors(this.gameState.board, 1);
         if (candidates.length === 0) return this.evaluateBoard(this.gameState.board, player);
-
-        // Move Ordering (Killer Heuristic - use TT best move)
-        if (ttEntry && ttEntry.bestMove) {
-            // Sort to put bestMove first (simplified)
-        }
 
         let bestScore = -Infinity;
         let bestMove = null;
@@ -460,7 +427,7 @@ class GomokuAIEngine {
             alpha = Math.max(alpha, val);
             if (alpha >= beta) {
                 flag = TT_FLAGS.LOWERBOUND;
-                break; // Beta Cutoff
+                break;
             }
         }
 
@@ -469,19 +436,13 @@ class GomokuAIEngine {
     }
 
     evaluateBoard(board, player) {
-        // Evaluate from 'player' perspective
-        // Score = MyPatterns - OpponentPatterns
         const opponent = player === GomokuConstants.PLAYER1 ? GomokuConstants.PLAYER2 : GomokuConstants.PLAYER1;
 
-        let myScore = 0;
-        let opScore = 0;
+        const myPatterns = this.countPatterns(board, player);
+        const opPatterns = this.countPatterns(board, opponent);
 
-        // Scan all lines
-        const lines = this.getAllLines(board);
-        for (const line of lines) {
-            myScore += this.getLineScore(line, player);
-            opScore += this.getLineScore(line, opponent);
-        }
+        let myScore = this.calculateScoreFromPatterns(myPatterns);
+        let opScore = this.calculateScoreFromPatterns(opPatterns);
 
         // Positional
         for (let r = 0; r < GomokuConstants.BOARD_SIZE; r++) {
@@ -491,14 +452,33 @@ class GomokuAIEngine {
             }
         }
 
-        // Attack/Defense Ratio
-        // If it's my turn, Attack is valuable. But Defense is critical if opponent is strong.
-        // Standard: Score = My - Opponent * 1.2
         return myScore - opScore * 1.2;
     }
 
-    getLineScore(line, player) {
-        // String matching for patterns
+    countPatterns(board, player) {
+        const counts = {
+            five: 0,
+            live4: 0,
+            dead4: 0,
+            live3: 0,
+            dead3: 0,
+            live2: 0
+        };
+
+        const lines = this.getAllLines(board);
+        for (const line of lines) {
+            const p = this.getLinePatterns(line, player);
+            counts.five += p.five;
+            counts.live4 += p.live4;
+            counts.dead4 += p.dead4;
+            counts.live3 += p.live3;
+            counts.dead3 += p.dead3;
+            counts.live2 += p.live2;
+        }
+        return counts;
+    }
+
+    getLinePatterns(line, player) {
         let str = "";
         for (let i = 0; i < line.length; i++) {
             if (line[i] === player) str += "x";
@@ -506,15 +486,35 @@ class GomokuAIEngine {
             else str += "o";
         }
 
-        let score = 0;
-        const S = GomokuConstants.AI.SCORES;
+        const counts = { five: 0, live4: 0, dead4: 0, live3: 0, dead3: 0, live2: 0 };
 
-        if (str.includes("xxxxx")) return S.FIVE;
-        if (str.includes("_xxxx_")) score += S.LIVE_FOUR;
-        if (str.includes("oxxxx_") || str.includes("_xxxxo") || str.includes("x_xxx") || str.includes("xxx_x") || str.includes("xx_xx")) score += S.DEAD_FOUR;
-        if (str.includes("_xxx_") || str.includes("_x_xx_") || str.includes("_xx_x_")) score += S.LIVE_THREE;
-        if (str.includes("oxxx_") || str.includes("_xxxo")) score += S.DEAD_THREE; // Less valuable
-        if (str.includes("_xx_") || str.includes("_x_x_") || str.includes("_xx_")) score += S.LIVE_TWO;
+        if (str.includes("xxxxx")) counts.five++;
+        if (str.includes("_xxxx_")) counts.live4++;
+        if (str.includes("oxxxx_") || str.includes("_xxxxo") || str.includes("x_xxx") || str.includes("xxx_x") || str.includes("xx_xx")) counts.dead4++;
+        if (str.includes("_xxx_") || str.includes("_x_xx_") || str.includes("_xx_x_")) counts.live3++;
+        if (str.includes("oxxx_") || str.includes("_xxxo")) counts.dead3++;
+        if (str.includes("_xx_") || str.includes("_x_x_")) counts.live2++;
+
+        return counts;
+    }
+
+    calculateScoreFromPatterns(counts) {
+        const S = GomokuConstants.AI.SCORES;
+        let score = 0;
+
+        if (counts.five > 0) return S.FIVE;
+
+        // Explicit Double Threat Detection
+        // 4-4, 4-3, 3-3 are Virtual Wins
+        const isDoubleThreat = (counts.live4 >= 1) || (counts.dead4 >= 2) || (counts.dead4 >= 1 && counts.live3 >= 1) || (counts.live3 >= 2);
+
+        if (isDoubleThreat) score += GomokuConstants.AI.VIRTUAL_WIN;
+
+        score += counts.live4 * S.LIVE_FOUR;
+        score += counts.dead4 * S.DEAD_FOUR;
+        score += counts.live3 * S.LIVE_THREE;
+        score += counts.dead3 * S.DEAD_THREE;
+        score += counts.live2 * S.LIVE_TWO;
 
         return score;
     }
@@ -583,7 +583,6 @@ class GomokuAIEngine {
     }
 
     evaluatePoint(board, r, c, player) {
-        // Simple heuristic for sorting
         let score = 0;
         score += this.posWeights[r][c];
         return score;
