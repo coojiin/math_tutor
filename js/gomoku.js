@@ -452,7 +452,9 @@ class GomokuAIEngine {
             }
         }
 
-        return myScore - opScore * 1.2;
+        // Attack/Defense Ratio
+        // Aggressive Mode: Score = My * 1.5 - Opponent
+        return myScore * 1.5 - opScore;
     }
 
     countPatterns(board, player) {
