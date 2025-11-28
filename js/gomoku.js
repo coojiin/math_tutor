@@ -1,21 +1,47 @@
-// Gomoku Game Logic (MVC Pattern)
+// Gomoku Game Logic (MVC Pattern) - Advanced AI & Dynamic Board
 
 const GomokuConstants = {
-    BOARD_SIZE: 19, // Standard 19x19
+    // Board size will be set dynamically
+    BOARD_SIZE: 19,
     EMPTY: 0,
     PLAYER1: 1, // Black (Human)
     PLAYER2: 2, // White (AI)
     AI: {
-        SEARCH_DEPTH: 3, // Depth 3 is reasonable for JS
-        WIN_SCORE: 100000,
-        PATTERN_SCORES: { FIVE: 100000, LONG_CONNECT: 0, LIVE_FOUR: 10000, DEAD_FOUR: 800, LIVE_THREE: 800, DEAD_THREE: 100, LIVE_TWO: 100, DEAD_TWO: 10, LIVE_ONE: 10, DEAD_ONE: 1 }
+        SEARCH_DEPTH: 4, // Deeper search for smarter AI
+        WIN_SCORE: 10000000, // Higher win score
+        // Evaluation Scores
+        SCORES: {
+            FIVE: 10000000,
+            LIVE_FOUR: 100000,
+            DEAD_FOUR: 10000, // Force move
+            LIVE_THREE: 10000, // Almost as good as dead four
+            DEAD_THREE: 1000,
+            LIVE_TWO: 100,
+            DEAD_TWO: 10,
+            ONE: 1
+        }
     }
 };
 
 class GomokuState {
-    constructor() { this.reset(); }
+    constructor() {
+        this.determineBoardSize();
+        this.reset();
+    }
+
+    determineBoardSize() {
+        // Mobile check: if width < 600px, use 13x13
+        if (window.innerWidth < 600) {
+            GomokuConstants.BOARD_SIZE = 13;
+        } else {
+            GomokuConstants.BOARD_SIZE = 19;
+        }
+    }
+
     _createEmptyBoard() { return Array(GomokuConstants.BOARD_SIZE).fill(null).map(() => Array(GomokuConstants.BOARD_SIZE).fill(GomokuConstants.EMPTY)); }
+
     reset() {
+        this.determineBoardSize(); // Re-check size on reset
         this.board = this._createEmptyBoard();
         this.currentPlayer = GomokuConstants.PLAYER1;
         this.gameOver = false;
@@ -23,6 +49,7 @@ class GomokuState {
         this.lastMove = null;
         this.isAiThinking = false;
     }
+
     isOnBoard(row, col) { return row >= 0 && row < GomokuConstants.BOARD_SIZE && col >= 0 && col < GomokuConstants.BOARD_SIZE; }
     cloneBoard() { return JSON.parse(JSON.stringify(this.board)); }
 }
@@ -38,7 +65,10 @@ class GomokuRenderer {
         const { boardElement } = this;
         boardElement.innerHTML = '';
 
-        // Render Intersections
+        // Dynamic Grid Sizing
+        boardElement.style.gridTemplateColumns = `repeat(${GomokuConstants.BOARD_SIZE}, 1fr)`;
+        boardElement.style.gridTemplateRows = `repeat(${GomokuConstants.BOARD_SIZE}, 1fr)`;
+
         const { gameOver, isAiThinking, currentPlayer, board, lastMove } = this.gameState;
 
         for (let r = 0; r < GomokuConstants.BOARD_SIZE; r++) {
@@ -48,7 +78,7 @@ class GomokuRenderer {
                 intersection.dataset.row = r;
                 intersection.dataset.col = c;
 
-                // Star Points (Hoshi) for 19x19
+                // Star Points (Hoshi)
                 if (this.isStarPoint(r, c)) {
                     const dot = document.createElement('div');
                     dot.classList.add('star-dot');
@@ -84,10 +114,15 @@ class GomokuRenderer {
     }
 
     isStarPoint(r, c) {
-        // Standard Star Points for 19x19: (3,3), (3,9), (3,15), (9,3), (9,9), (9,15), (15,3), (15,9), (15,15)
-        // Indices are 0-based, so: 3, 9, 15
-        const stars = [3, 9, 15];
-        return stars.includes(r) && stars.includes(c);
+        const size = GomokuConstants.BOARD_SIZE;
+        if (size === 19) {
+            const stars = [3, 9, 15];
+            return stars.includes(r) && stars.includes(c);
+        } else if (size === 13) {
+            const stars = [3, 6, 9];
+            return stars.includes(r) && stars.includes(c);
+        }
+        return false;
     }
 
     updateMessage() {
@@ -141,118 +176,139 @@ class GomokuRuleEngine {
     }
 }
 
+// --- Advanced AI Engine ---
 class GomokuAIEngine {
     constructor(gameState) { this.gameState = gameState; }
+
     async makeMove() {
         if (this.gameState.gameOver || this.gameState.currentPlayer !== GomokuConstants.PLAYER2) return;
         this.gameState.isAiThinking = true;
-        await new Promise(resolve => setTimeout(resolve, 50)); // UI update
+
+        // Allow UI to update
+        await new Promise(resolve => setTimeout(resolve, 20));
+
         const bestMove = this.getBestMove();
         if (bestMove) return bestMove;
         return this.findFirstEmpty();
     }
+
     findFirstEmpty() {
         const { board } = this.gameState;
-        // Start from center for better first moves if fallback needed
         const center = Math.floor(GomokuConstants.BOARD_SIZE / 2);
         if (board[center][center] === GomokuConstants.EMPTY) return { row: center, col: center };
-
         for (let r = 0; r < GomokuConstants.BOARD_SIZE; r++) for (let c = 0; c < GomokuConstants.BOARD_SIZE; c++) if (board[r][c] === GomokuConstants.EMPTY) return { row: r, col: c };
         return null;
     }
+
     getBestMove() {
-        const currentBoard = this.gameState.cloneBoard();
-        if (this.isBoardEmpty(currentBoard)) return { row: Math.floor(GomokuConstants.BOARD_SIZE / 2), col: Math.floor(GomokuConstants.BOARD_SIZE / 2) };
+        const board = this.gameState.board;
+        // 1. If board is empty, play center
+        if (this.isBoardEmpty(board)) {
+            return { row: Math.floor(GomokuConstants.BOARD_SIZE / 2), col: Math.floor(GomokuConstants.BOARD_SIZE / 2) };
+        }
 
-        let bestScore = -Infinity, bestMove = null;
-        const moves = this.getValidMoves(currentBoard);
+        // 2. Alpha-Beta Pruning Search
+        // Limit search space to neighbors of existing stones
+        const candidates = this.getValidMoves(board);
 
-        // Limit moves for performance on 19x19 if too many
-        // For 19x19, we must be careful with branching factor. 
-        // getValidMoves already filters to neighbors, which is good.
+        let bestScore = -Infinity;
+        let bestMove = candidates[0];
+        let alpha = -Infinity;
+        let beta = Infinity;
 
-        let alpha = -Infinity, beta = Infinity;
-        for (const move of moves) {
-            const boardCopy = JSON.parse(JSON.stringify(currentBoard));
-            boardCopy[move.row][move.col] = GomokuConstants.PLAYER2;
-            const score = this.minimax(boardCopy, GomokuConstants.AI.SEARCH_DEPTH - 1, alpha, beta, false);
-            if (score > bestScore) { bestScore = score; bestMove = move; }
+        // Iterative Deepening could be added here, but for now fixed depth
+        // Sort candidates by heuristic score to improve pruning
+        candidates.sort((a, b) => {
+            // Simple heuristic sort: closer to center or part of lines?
+            // For speed, we just use a simple evaluation of the single move
+            return this.evaluatePoint(board, b.row, b.col, GomokuConstants.PLAYER2) -
+                this.evaluatePoint(board, a.row, a.col, GomokuConstants.PLAYER2);
+        });
+
+        // Limit candidates for performance if too many
+        const topCandidates = candidates.slice(0, 20); // Only look at top 20 moves
+
+        for (const move of topCandidates) {
+            board[move.row][move.col] = GomokuConstants.PLAYER2;
+            const score = this.minimax(board, GomokuConstants.AI.SEARCH_DEPTH - 1, alpha, beta, false);
+            board[move.row][move.col] = GomokuConstants.EMPTY; // Undo
+
+            if (score > bestScore) {
+                bestScore = score;
+                bestMove = move;
+            }
             alpha = Math.max(alpha, score);
         }
+
         return bestMove;
     }
-    minimax(board, depth, alpha, beta, isMaximizingPlayer) {
-        const winner = this.checkWinner(board);
-        if (winner === GomokuConstants.PLAYER2) return GomokuConstants.AI.WIN_SCORE + depth;
-        if (winner === GomokuConstants.PLAYER1) return -GomokuConstants.AI.WIN_SCORE - depth;
-        if (this.isBoardFull(board)) return 0;
-        if (depth === 0) return this.evaluateBoard(board);
 
-        const validMoves = this.getValidMoves(board);
-        // Performance optimization: Limit valid moves in deeper recursion if needed
+    minimax(board, depth, alpha, beta, isMaximizing) {
+        // Check terminal states
+        const score = this.evaluateBoard(board);
+        // If someone won or lost significantly, return immediately
+        if (Math.abs(score) >= GomokuConstants.AI.SCORES.FIVE) return score;
+        if (depth === 0) return score;
 
-        if (isMaximizingPlayer) {
+        const candidates = this.getValidMoves(board);
+        // Optimization: if no candidates, draw
+        if (candidates.length === 0) return 0;
+
+        // Sort candidates (critical for pruning)
+        // Heuristic: prioritize moves that have high impact
+        // This sort is expensive, maybe just pick top few?
+        // For depth > 1, we can just take neighbors.
+
+        // Limit branching factor
+        const limit = 12; // Reduced branching factor for deeper search
+        const topCandidates = candidates.slice(0, limit);
+
+        if (isMaximizing) {
             let maxEval = -Infinity;
-            for (const move of validMoves) {
-                const boardCopy = JSON.parse(JSON.stringify(board));
-                boardCopy[move.row][move.col] = GomokuConstants.PLAYER2;
-                const score = this.minimax(boardCopy, depth - 1, alpha, beta, false);
-                maxEval = Math.max(maxEval, score);
-                alpha = Math.max(alpha, score);
+            for (const move of topCandidates) {
+                board[move.row][move.col] = GomokuConstants.PLAYER2;
+                const evalScore = this.minimax(board, depth - 1, alpha, beta, false);
+                board[move.row][move.col] = GomokuConstants.EMPTY;
+                maxEval = Math.max(maxEval, evalScore);
+                alpha = Math.max(alpha, evalScore);
                 if (beta <= alpha) break;
             }
             return maxEval;
         } else {
             let minEval = Infinity;
-            for (const move of validMoves) {
-                const boardCopy = JSON.parse(JSON.stringify(board));
-                boardCopy[move.row][move.col] = GomokuConstants.PLAYER1;
-                const score = this.minimax(boardCopy, depth - 1, alpha, beta, true);
-                minEval = Math.min(minEval, score);
-                beta = Math.min(beta, score);
+            for (const move of topCandidates) {
+                board[move.row][move.col] = GomokuConstants.PLAYER1;
+                const evalScore = this.minimax(board, depth - 1, alpha, beta, true);
+                board[move.row][move.col] = GomokuConstants.EMPTY;
+                minEval = Math.min(minEval, evalScore);
+                beta = Math.min(beta, evalScore);
                 if (beta <= alpha) break;
             }
             return minEval;
         }
     }
-    checkWinner(board) {
-        const rule = new GomokuRuleEngine({ board, isOnBoard: this.gameState.isOnBoard.bind(this.gameState) });
-        // Optimization: Only check around occupied cells? 
-        // For now, full scan is safe but slow. 
-        // Better: Pass last move to checkWinner? 
-        // Since we copy board, we lose last move context easily unless passed.
-        // We'll stick to full scan for correctness but it might be slow on 19x19.
-        // To optimize: Only check non-empty cells.
-        for (let r = 0; r < GomokuConstants.BOARD_SIZE; r++) {
-            for (let c = 0; c < GomokuConstants.BOARD_SIZE; c++) {
-                if (board[r][c] !== GomokuConstants.EMPTY) {
-                    if (rule.checkWin(r, c, board[r][c])) return board[r][c];
-                }
-            }
-        }
-        return GomokuConstants.EMPTY;
-    }
-    isBoardEmpty(board) { for (let r = 0; r < GomokuConstants.BOARD_SIZE; r++) for (let c = 0; c < GomokuConstants.BOARD_SIZE; c++) if (board[r][c] !== GomokuConstants.EMPTY) return false; return true; }
-    isBoardFull(board) { for (let r = 0; r < GomokuConstants.BOARD_SIZE; r++) for (let c = 0; c < GomokuConstants.BOARD_SIZE; c++) if (board[r][c] === GomokuConstants.EMPTY) return false; return true; }
+
     getValidMoves(board) {
         const moves = [];
-        if (this.isBoardEmpty(board)) return [{ row: Math.floor(GomokuConstants.BOARD_SIZE / 2), col: Math.floor(GomokuConstants.BOARD_SIZE / 2) }];
-
-        // Heuristic: Only consider moves near existing stones (distance 1 or 2)
-        for (let r = 0; r < GomokuConstants.BOARD_SIZE; r++) {
-            for (let c = 0; c < GomokuConstants.BOARD_SIZE; c++) {
-                if (board[r][c] === GomokuConstants.EMPTY && this.hasNeighbors(board, r, c, 2)) {
-                    moves.push({ row: r, col: c });
+        const size = GomokuConstants.BOARD_SIZE;
+        // Optimization: Use a Set for visited to avoid duplicates if we change logic
+        // Only check cells with distance 1 or 2 from existing stones
+        for (let r = 0; r < size; r++) {
+            for (let c = 0; c < size; c++) {
+                if (board[r][c] === GomokuConstants.EMPTY) {
+                    if (this.hasNeighbors(board, r, c, 1)) { // Distance 1 is usually enough for Gomoku
+                        moves.push({ row: r, col: c });
+                    }
                 }
             }
         }
-
-        // Fallback if no moves found (shouldn't happen unless empty or full)
-        if (moves.length === 0 && !this.isBoardFull(board)) {
-            for (let r = 0; r < GomokuConstants.BOARD_SIZE; r++) for (let c = 0; c < GomokuConstants.BOARD_SIZE; c++) if (board[r][c] === GomokuConstants.EMPTY) moves.push({ row: r, col: c });
+        // If board is empty (handled in getBestMove), or no neighbors (rare), return all empty
+        if (moves.length === 0) {
+            for (let r = 0; r < size; r++) for (let c = 0; c < size; c++) if (board[r][c] === GomokuConstants.EMPTY) moves.push({ row: r, col: c });
         }
         return moves;
     }
+
     hasNeighbors(board, r, c, distance) {
         const minR = Math.max(0, r - distance);
         const maxR = Math.min(GomokuConstants.BOARD_SIZE - 1, r + distance);
@@ -266,58 +322,185 @@ class GomokuAIEngine {
         }
         return false;
     }
+
+    isBoardEmpty(board) {
+        for (let r = 0; r < GomokuConstants.BOARD_SIZE; r++)
+            for (let c = 0; c < GomokuConstants.BOARD_SIZE; c++)
+                if (board[r][c] !== GomokuConstants.EMPTY) return false;
+        return true;
+    }
+
+    // --- Advanced Evaluation ---
     evaluateBoard(board) {
-        let aiScore = 0, humanScore = 0;
-        const lines = this.getAllLines(board);
-        for (const line of lines) {
-            aiScore += this.evaluateLine(line, GomokuConstants.PLAYER2);
-            humanScore += this.evaluateLine(line, GomokuConstants.PLAYER1);
+        let score = 0;
+        // Evaluate all lines (rows, cols, diags)
+        // We can optimize this by only evaluating changed lines, but full scan is safer for stateless eval
+
+        // Horizontal
+        for (let r = 0; r < GomokuConstants.BOARD_SIZE; r++) {
+            score += this.evaluateLine(board[r]);
         }
-        return aiScore - humanScore;
-    }
-    getAllLines(board) {
-        const lines = [];
-        // Rows
-        for (let r = 0; r < GomokuConstants.BOARD_SIZE; r++) lines.push(board[r]);
-        // Cols
-        for (let c = 0; c < GomokuConstants.BOARD_SIZE; c++) lines.push(board.map(row => row[c]));
+        // Vertical
+        for (let c = 0; c < GomokuConstants.BOARD_SIZE; c++) {
+            const col = [];
+            for (let r = 0; r < GomokuConstants.BOARD_SIZE; r++) col.push(board[r][c]);
+            score += this.evaluateLine(col);
+        }
         // Diagonals
-        // Optimization: Only diagonals with length >= 5
-        for (let k = 0; k <= 2 * (GomokuConstants.BOARD_SIZE - 1); k++) {
-            const diag = [];
-            for (let r = 0; r < GomokuConstants.BOARD_SIZE; r++) {
-                const c = k - r;
-                if (c >= 0 && c < GomokuConstants.BOARD_SIZE) diag.push(board[r][c]);
-            }
-            if (diag.length >= 5) lines.push(diag);
-        }
-        for (let k = 1 - GomokuConstants.BOARD_SIZE; k < GomokuConstants.BOARD_SIZE; k++) {
-            const diag = [];
-            for (let r = 0; r < GomokuConstants.BOARD_SIZE; r++) {
-                const c = k + r;
-                if (c >= 0 && c < GomokuConstants.BOARD_SIZE) diag.push(board[r][c]);
-            }
-            if (diag.length >= 5) lines.push(diag);
-        }
-        return lines;
+        score += this.evaluateDiagonals(board);
+
+        return score;
     }
-    evaluateLine(line, player) {
-        let score = 0, len = line.length;
-        for (let i = 0; i < len; i++) {
+
+    evaluateDiagonals(board) {
+        let score = 0;
+        const size = GomokuConstants.BOARD_SIZE;
+        // Top-left to bottom-right
+        for (let k = 0; k <= 2 * (size - 1); k++) {
+            const diag = [];
+            for (let r = 0; r < size; r++) {
+                const c = k - r;
+                if (c >= 0 && c < size) diag.push(board[r][c]);
+            }
+            if (diag.length >= 5) score += this.evaluateLine(diag);
+        }
+        // Top-right to bottom-left
+        for (let k = 1 - size; k < size; k++) {
+            const diag = [];
+            for (let r = 0; r < size; r++) {
+                const c = k + r;
+                if (c >= 0 && c < size) diag.push(board[r][c]);
+            }
+            if (diag.length >= 5) score += this.evaluateLine(diag);
+        }
+        return score;
+    }
+
+    evaluateLine(line) {
+        let score = 0;
+        const len = line.length;
+        // Analyze patterns for both players
+        // Player 2 (AI) is maximizing, Player 1 (Human) is minimizing
+
+        score += this.getLineScore(line, GomokuConstants.PLAYER2);
+        score -= this.getLineScore(line, GomokuConstants.PLAYER1) * 1.2; // Defense is slightly more important
+
+        return score;
+    }
+
+    getLineScore(line, player) {
+        let score = 0;
+        let count = 0;
+        let openEnds = 0;
+        let consecutive = 0;
+
+        // We need to find consecutive stones and check their ends
+        // Simple regex-like state machine
+
+        for (let i = 0; i < line.length; i++) {
             if (line[i] === player) {
-                let count = 0, openEnds = 0, k = i;
-                while (k < len && line[k] === player) { count++; k++; }
-                if (i > 0 && line[i - 1] === GomokuConstants.EMPTY) openEnds++;
-                if (k < len && line[k] === GomokuConstants.EMPTY) openEnds++;
-                const { PATTERN_SCORES } = GomokuConstants.AI;
-                if (count >= 5) score += PATTERN_SCORES.FIVE;
-                else if (count === 4) score += (openEnds === 2 ? PATTERN_SCORES.LIVE_FOUR : (openEnds === 1 ? PATTERN_SCORES.DEAD_FOUR : 0));
-                else if (count === 3) score += (openEnds === 2 ? PATTERN_SCORES.LIVE_THREE : (openEnds === 1 ? PATTERN_SCORES.DEAD_THREE : 0));
-                else if (count === 2) score += (openEnds === 2 ? PATTERN_SCORES.LIVE_TWO : (openEnds === 1 ? PATTERN_SCORES.DEAD_TWO : 0));
-                else if (count === 1) score += (openEnds === 2 ? PATTERN_SCORES.LIVE_ONE : (openEnds === 1 ? PATTERN_SCORES.DEAD_ONE : 0));
-                i = k - 1;
+                consecutive++;
+            } else if (line[i] === GomokuConstants.EMPTY) {
+                if (consecutive > 0) {
+                    // End of a block
+                    score += this.scorePattern(consecutive, 1); // 1 open end (current)
+                    // Check if previous end was open
+                    // This simple logic is flawed for "Live" vs "Dead".
+                    // Better approach: Look for specific patterns.
+                    consecutive = 0;
+                }
+            } else {
+                // Opponent stone
+                if (consecutive > 0) {
+                    score += this.scorePattern(consecutive, 0); // Blocked
+                    consecutive = 0;
+                }
             }
         }
+        // Check last block
+        if (consecutive > 0) {
+            score += this.scorePattern(consecutive, 0); // Blocked by edge
+        }
+
+        // Improved Pattern Matching (Slower but accurate)
+        // Convert line to string for easier matching? 
+        // Or just sliding window.
+        // Let's use a sliding window of size 5, 6
+
+        return this.slidingWindowScore(line, player);
+    }
+
+    slidingWindowScore(line, player) {
+        let score = 0;
+        const str = line.join('');
+        const p = player;
+        const e = GomokuConstants.EMPTY;
+        const o = (player === 1) ? 2 : 1; // Opponent
+
+        // Patterns
+        // 11111 -> 5
+        // 011110 -> Live 4
+        // 011112, 211110 -> Dead 4
+        // 01110 -> Live 3
+        // 01112, 21110 -> Dead 3
+
+        // We can iterate and check specific shapes
+        // This is a simplified version of shape detection
+
+        let consecutive = 0;
+        let openBefore = false;
+
+        for (let i = 0; i < line.length; i++) {
+            if (line[i] === player) {
+                consecutive++;
+            } else {
+                if (consecutive > 0) {
+                    const openAfter = (line[i] === GomokuConstants.EMPTY);
+                    score += this.calculateShapeScore(consecutive, openBefore, openAfter);
+                    consecutive = 0;
+                }
+                openBefore = (line[i] === GomokuConstants.EMPTY);
+            }
+        }
+        if (consecutive > 0) {
+            score += this.calculateShapeScore(consecutive, openBefore, false); // Blocked by edge
+        }
+
+        return score;
+    }
+
+    calculateShapeScore(count, openBefore, openAfter) {
+        const { SCORES } = GomokuConstants.AI;
+        if (count >= 5) return SCORES.FIVE;
+        if (count === 4) {
+            if (openBefore && openAfter) return SCORES.LIVE_FOUR;
+            if (openBefore || openAfter) return SCORES.DEAD_FOUR;
+            return 0;
+        }
+        if (count === 3) {
+            if (openBefore && openAfter) return SCORES.LIVE_THREE;
+            if (openBefore || openAfter) return SCORES.DEAD_THREE;
+            return 0;
+        }
+        if (count === 2) {
+            if (openBefore && openAfter) return SCORES.LIVE_TWO;
+            if (openBefore || openAfter) return SCORES.DEAD_TWO;
+            return 0;
+        }
+        return 0;
+    }
+
+    // Evaluate a single point for sorting moves
+    evaluatePoint(board, r, c, player) {
+        // Quick check of impact of placing a stone here
+        // Just sum up the scores of lines passing through this point
+        let score = 0;
+        // Row
+        score += this.getLineScore(board[r], player);
+        // Col
+        const col = []; for (let i = 0; i < GomokuConstants.BOARD_SIZE; i++) col.push(board[i][c]);
+        score += this.getLineScore(col, player);
+        // Diags... (skip for speed in sorting)
         return score;
     }
 }
@@ -330,7 +513,15 @@ class GomokuController {
         this.aiEngine = new GomokuAIEngine(this.gameState);
         this.renderer.renderBoard(this.handleCellClick.bind(this));
         this.renderer.updateMessage();
+
+        // Handle Resize
+        window.addEventListener('resize', () => {
+            // Optional: Auto-restart or just resize? 
+            // Changing board size mid-game is bad. 
+            // Just let it be for now, or reload on major breakpoint change.
+        });
     }
+
     async handleCellClick(row, col) {
         if (this.gameState.gameOver || this.gameState.isAiThinking || this.gameState.currentPlayer !== GomokuConstants.PLAYER1) return;
         if (this.ruleEngine.makeMove(row, col, GomokuConstants.PLAYER1)) {
@@ -342,7 +533,6 @@ class GomokuController {
                 this.gameState.isAiThinking = true;
                 this.renderer.renderBoard(this.handleCellClick.bind(this)); // Update cursor
 
-                // Allow UI to render before AI starts blocking
                 await new Promise(resolve => setTimeout(resolve, 50));
 
                 const aiMove = await this.aiEngine.makeMove();
