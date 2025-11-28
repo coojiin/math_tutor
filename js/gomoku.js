@@ -1,4 +1,4 @@
-// Gomoku Game Logic (MVC Pattern) - MCTS AI Engine
+// Gomoku Game Logic (MVC Pattern) - Hybrid MCTS AI Engine (Smart Simulation)
 
 const GomokuConstants = {
     BOARD_SIZE: 19, // Dynamic
@@ -7,8 +7,8 @@ const GomokuConstants = {
     PLAYER2: 2, // White (AI)
     AI: {
         TIME_LIMIT: 1000, // 1 second
-        SIMULATION_LIMIT: 5000, // Max simulations
-        UCT_C: 1.41 // UCT exploration constant (√2)
+        SIMULATION_LIMIT: 10000, // Increased limit
+        UCT_C: 1.41
     }
 };
 
@@ -244,7 +244,6 @@ class MCTSNode {
             }
         }
 
-        // If no moves found (empty board), return center
         if (moves.length === 0) {
             const center = Math.floor(size / 2);
             moves.push({ row: center, col: center });
@@ -267,7 +266,6 @@ class MCTSNode {
         return false;
     }
 
-    // UCT Selection
     uctValue(c = GomokuConstants.AI.UCT_C) {
         if (this.visits === 0) return Infinity;
         return (this.wins / this.visits) + c * Math.sqrt(Math.log(this.parent.visits) / this.visits);
@@ -298,7 +296,7 @@ class MCTSNode {
     }
 }
 
-// --- MCTS AI Engine ---
+// --- Hybrid MCTS AI Engine ---
 class GomokuAIEngine {
     constructor(gameState) {
         this.gameState = gameState;
@@ -312,107 +310,132 @@ class GomokuAIEngine {
 
         await new Promise(resolve => setTimeout(resolve, 20));
 
+        // 1. Immediate Threat Check (Pre-MCTS)
+        const immediateMove = this.findImmediateThreat(this.gameState.board, GomokuConstants.PLAYER2);
+        if (immediateMove) {
+            console.log("Immediate Threat Found:", immediateMove);
+            return immediateMove;
+        }
+
+        // 2. MCTS Search
         const bestMove = this.mctsSearch();
         return bestMove;
     }
 
-    mctsSearch() {
-        const rootState = this.gameState.clone();
-        const root = new MCTSNode(rootState, null);
-
-        const startTime = Date.now();
-        let iterations = 0;
-
-        while (Date.now() - startTime < GomokuConstants.AI.TIME_LIMIT &&
-            iterations < GomokuConstants.AI.SIMULATION_LIMIT) {
-
-            // 1. Selection
-            let node = root;
-            while (node.untriedMoves.length === 0 && node.children.length > 0) {
-                node = node.selectChild();
-            }
-
-            // 2. Expansion
-            if (node.untriedMoves.length > 0) {
-                const move = node.untriedMoves[Math.floor(Math.random() * node.untriedMoves.length)];
-                node = node.addChild(move);
-            }
-
-            // 3. Simulation
-            const result = this.simulate(node.state);
-
-            // 4. Backpropagation
-            while (node !== null) {
-                node.update(result);
-                node = node.parent;
-            }
-
-            iterations++;
-        }
-
-        // Select best move based on visit count
-        if (root.children.length === 0) {
-            // Fallback: return center
-            const center = Math.floor(GomokuConstants.BOARD_SIZE / 2);
-            return { row: center, col: center };
-        }
-
-        const bestChild = root.children.reduce((best, child) =>
-            child.visits > best.visits ? child : best
-        );
-
-        return bestChild.move;
-    }
-
-    simulate(state) {
-        const simState = state.clone();
-        const ruleEngine = new GomokuRuleEngine(simState);
-        let currentPlayer = simState.currentPlayer;
-        let moveCount = 0;
-        const maxMoves = 200; // Prevent infinite loops
-
-        while (!simState.gameOver && moveCount < maxMoves) {
-            const possibleMoves = this.getPossibleMoves(simState.board);
-            if (possibleMoves.length === 0) break;
-
-            const move = possibleMoves[Math.floor(Math.random() * possibleMoves.length)];
-            ruleEngine.makeMove(move.row, move.col, currentPlayer);
-            currentPlayer = currentPlayer === GomokuConstants.PLAYER1 ?
-                GomokuConstants.PLAYER2 : GomokuConstants.PLAYER1;
-            moveCount++;
-        }
-
-        // Return result from AI's perspective
-        if (simState.winner === GomokuConstants.PLAYER2) return 1;
-        if (simState.winner === GomokuConstants.PLAYER1) return 0;
-        return 0.5; // Draw
-    }
-
-    getPossibleMoves(board) {
-        const moves = [];
+    // Check for Win in 1, Block Win in 1, Block Live 3
+    findImmediateThreat(board, aiPlayer) {
+        const humanPlayer = aiPlayer === 1 ? 2 : 1;
         const size = GomokuConstants.BOARD_SIZE;
+        const empties = [];
 
+        // Collect empty spots near stones
         for (let r = 0; r < size; r++) {
             for (let c = 0; c < size; c++) {
-                if (board[r][c] === GomokuConstants.EMPTY) {
-                    if (this.hasNeighbors(board, r, c, 2)) {
-                        moves.push({ row: r, col: c });
-                    }
+                if (board[r][c] === GomokuConstants.EMPTY && this.hasNeighbors(board, r, c, 1)) {
+                    empties.push({ row: r, col: c });
                 }
             }
         }
 
-        if (moves.length === 0) {
-            for (let r = 0; r < size; r++) {
-                for (let c = 0; c < size; c++) {
-                    if (board[r][c] === GomokuConstants.EMPTY) {
-                        moves.push({ row: r, col: c });
-                    }
-                }
-            }
+        // 1. Check AI Win (5)
+        for (const move of empties) {
+            if (this.checkPattern(board, move.row, move.col, aiPlayer, 5)) return move;
         }
 
-        return moves;
+        // 2. Check Block Human Win (5) - "Dead 4" / "Live 4"
+        for (const move of empties) {
+            if (this.checkPattern(board, move.row, move.col, humanPlayer, 5)) return move;
+        }
+
+        // 3. Check AI Live 4 (Unstoppable)
+        for (const move of empties) {
+            if (this.checkLive4(board, move.row, move.col, aiPlayer)) return move;
+        }
+
+        // 4. Check Block Human Live 4 (Unstoppable)
+        for (const move of empties) {
+            if (this.checkLive4(board, move.row, move.col, humanPlayer)) return move;
+        }
+
+        // 5. Check Block Human Live 3 (Becomes Live 4)
+        for (const move of empties) {
+            if (this.checkLive3(board, move.row, move.col, humanPlayer)) return move;
+        }
+
+        return null;
+    }
+
+    // Helper to check if placing a stone at r,c creates a line of length 'target'
+    checkPattern(board, r, c, player, target) {
+        board[r][c] = player;
+        const directions = [{ dr: 0, dc: 1 }, { dr: 1, dc: 0 }, { dr: 1, dc: 1 }, { dr: 1, dc: -1 }];
+        let found = false;
+        for (const { dr, dc } of directions) {
+            let count = 1;
+            for (let i = 1; i < 5; i++) {
+                if (this.isOnBoard(r + i * dr, c + i * dc) && board[r + i * dr][c + i * dc] === player) count++; else break;
+            }
+            for (let i = 1; i < 5; i++) {
+                if (this.isOnBoard(r - i * dr, c - i * dc) && board[r - i * dr][c - i * dc] === player) count++; else break;
+            }
+            if (count >= target) { found = true; break; }
+        }
+        board[r][c] = GomokuConstants.EMPTY; // Undo
+        return found;
+    }
+
+    checkLive4(board, r, c, player) {
+        // Live 4 means 011110. Placing stone creates 5? No, placing stone creates Live 4.
+        // This function checks if placing a stone creates a Live 4 (which guarantees a win next turn).
+        // Actually, we want to check if placing stone creates 5 (handled above).
+        // Here we check if placing stone creates "Open 4" (011110)
+        board[r][c] = player;
+        const directions = [{ dr: 0, dc: 1 }, { dr: 1, dc: 0 }, { dr: 1, dc: 1 }, { dr: 1, dc: -1 }];
+        let found = false;
+        for (const { dr, dc } of directions) {
+            // Check for pattern _XXXX_
+            // We need to construct the line string
+            const lineStr = this.getLineString(board, r, c, dr, dc, player);
+            if (lineStr.includes("_xxxx_")) { found = true; break; }
+        }
+        board[r][c] = GomokuConstants.EMPTY;
+        return found;
+    }
+
+    checkLive3(board, r, c, player) {
+        // Check if placing stone creates Live 3 (01110)
+        board[r][c] = player;
+        const directions = [{ dr: 0, dc: 1 }, { dr: 1, dc: 0 }, { dr: 1, dc: 1 }, { dr: 1, dc: -1 }];
+        let found = false;
+        for (const { dr, dc } of directions) {
+            const lineStr = this.getLineString(board, r, c, dr, dc, player);
+            if (lineStr.includes("_xxx_") || lineStr.includes("_x_xx_") || lineStr.includes("_xx_x_")) { found = true; break; }
+        }
+        board[r][c] = GomokuConstants.EMPTY;
+        return found;
+    }
+
+    getLineString(board, r, c, dr, dc, player) {
+        // Get 9 chars centered at r,c
+        let str = "";
+        for (let i = -4; i <= 4; i++) {
+            const nr = r + i * dr;
+            const nc = c + i * dc;
+            if (!this.isOnBoard(nr, nc)) {
+                str += "|"; // Edge
+            } else {
+                const p = board[nr][nc];
+                if (p === player) str += "x";
+                else if (p === GomokuConstants.EMPTY) str += "_";
+                else str += "o";
+            }
+        }
+        return str;
+    }
+
+    isOnBoard(row, col) {
+        return row >= 0 && row < GomokuConstants.BOARD_SIZE &&
+            col >= 0 && col < GomokuConstants.BOARD_SIZE;
     }
 
     hasNeighbors(board, r, c, distance) {
@@ -427,6 +450,99 @@ class GomokuAIEngine {
             }
         }
         return false;
+    }
+
+    mctsSearch() {
+        const rootState = this.gameState.clone();
+        const root = new MCTSNode(rootState, null);
+
+        const startTime = Date.now();
+        let iterations = 0;
+
+        while (Date.now() - startTime < GomokuConstants.AI.TIME_LIMIT &&
+            iterations < GomokuConstants.AI.SIMULATION_LIMIT) {
+
+            let node = root;
+            while (node.untriedMoves.length === 0 && node.children.length > 0) {
+                node = node.selectChild();
+            }
+
+            if (node.untriedMoves.length > 0) {
+                const move = node.untriedMoves[Math.floor(Math.random() * node.untriedMoves.length)];
+                node = node.addChild(move);
+            }
+
+            const result = this.simulate(node.state);
+
+            while (node !== null) {
+                node.update(result);
+                node = node.parent;
+            }
+            iterations++;
+        }
+
+        if (root.children.length === 0) {
+            const center = Math.floor(GomokuConstants.BOARD_SIZE / 2);
+            return { row: center, col: center };
+        }
+
+        const bestChild = root.children.reduce((best, child) =>
+            child.visits > best.visits ? child : best
+        );
+
+        return bestChild.move;
+    }
+
+    // Greedy Simulation (Heavy Playout)
+    simulate(state) {
+        const simState = state.clone();
+        const ruleEngine = new GomokuRuleEngine(simState);
+        let currentPlayer = simState.currentPlayer;
+        let moveCount = 0;
+        const maxMoves = 60; // Shorter simulation for speed
+
+        while (!simState.gameOver && moveCount < maxMoves) {
+            // Greedy Check: Can I win now? Can I block win?
+            const urgentMove = this.findImmediateThreat(simState.board, currentPlayer);
+
+            let move;
+            if (urgentMove) {
+                move = urgentMove;
+            } else {
+                // Random neighbor move
+                const possibleMoves = this.getPossibleMoves(simState.board);
+                if (possibleMoves.length === 0) break;
+                move = possibleMoves[Math.floor(Math.random() * possibleMoves.length)];
+            }
+
+            ruleEngine.makeMove(move.row, move.col, currentPlayer);
+            currentPlayer = currentPlayer === GomokuConstants.PLAYER1 ?
+                GomokuConstants.PLAYER2 : GomokuConstants.PLAYER1;
+            moveCount++;
+        }
+
+        if (simState.winner === GomokuConstants.PLAYER2) return 1;
+        if (simState.winner === GomokuConstants.PLAYER1) return 0;
+        return 0.5;
+    }
+
+    getPossibleMoves(board) {
+        const moves = [];
+        const size = GomokuConstants.BOARD_SIZE;
+        for (let r = 0; r < size; r++) {
+            for (let c = 0; c < size; c++) {
+                if (board[r][c] === GomokuConstants.EMPTY) {
+                    if (this.hasNeighbors(board, r, c, 1)) { // Tighter neighbor check for simulation
+                        moves.push({ row: r, col: c });
+                    }
+                }
+            }
+        }
+        if (moves.length === 0) {
+            // Fallback
+            for (let r = 0; r < size; r++) for (let c = 0; c < size; c++) if (board[r][c] === GomokuConstants.EMPTY) moves.push({ row: r, col: c });
+        }
+        return moves;
     }
 }
 
