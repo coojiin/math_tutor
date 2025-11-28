@@ -1,0 +1,172 @@
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: 15px;
+    background-color: #f0f0f0;
+    color: #333;
+}
+
+h1 {
+    color: #444;
+    margin-bottom: 10px; /* Reduced margin */
+}
+
+#mode-selection {
+    margin-bottom: 15px;
+}
+
+.mode-button {
+    padding: 8px 15px;
+    font-size: 1em;
+    cursor: pointer;
+    background-color: #ddd;
+    color: #555;
+    border: 1px solid #bbb;
+    border-radius: 5px;
+    margin: 0 5px;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.mode-button.active {
+    background-color: #5a9bd5;
+    color: white;
+    border-color: #4a8bc5;
+    font-weight: bold;
+}
+
+#game-info {
+    display: flex;
+    flex-wrap: wrap; /* Allow wrapping on smaller screens */
+    justify-content: space-between;
+    align-items: center;
+    width: 450px; /* Roughly the board width */
+    max-width: 90vw;
+    margin-bottom: 15px;
+    min-height: 3em; /* Ensure space for elements */
+    gap: 10px; /* Add gap between elements */
+}
+
+#message {
+    font-size: 1.1em; /* Slightly smaller */
+    font-weight: bold;
+    color: #555;
+    flex-grow: 1; /* Allow message to take available space */
+    text-align: left;
+}
+
+#go-info {
+    display: flex; /* Use flex for internal alignment */
+    align-items: center;
+    font-size: 0.9em;
+    color: #444;
+}
+#go-info span {
+    font-weight: bold;
+    margin: 0 3px;
+}
+
+
+#resetButton, #passButton {
+    padding: 8px 15px;
+    font-size: 1em;
+    cursor: pointer;
+    background-color: #5a9bd5;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    transition: background-color 0.3s ease;
+    white-space: nowrap; /* Prevent button text wrapping */
+}
+#resetButton:hover, #passButton:hover {
+    background-color: #4a8bc5;
+}
+#resetButton:disabled, #passButton:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+}
+#passButton {
+    background-color: #6c757d; /* Gray for pass */
+}
+#passButton:hover {
+    background-color: #5a6268;
+}
+
+
+#board-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#board {
+    /* Dimensions set by JS */
+    display: grid;
+    border: 2px solid #6b4423;
+    background-color: #e4b268;
+    position: relative;
+    box-shadow: 5px 5px 15px rgba(0, 0, 0, 0.3);
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+}
+
+.cell {
+    /* Dimensions set by JS */
+    box-sizing: border-box;
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Grid Lines using Pseudo-elements */
+.cell::before, .cell::after {
+    content: '';
+    position: absolute;
+    background-color: #6b4423;
+    z-index: 0;
+}
+.cell::before { width: 1px; height: 100%; left: 50%; transform: translateX(-50%); }
+.cell::after { height: 1px; width: 100%; top: 50%; transform: translateY(-50%); }
+
+/* Optional: Enhance grid look (e.g., remove outer lines) */
+/* .cell[data-row="0"]::after { top: 100%; }
+.cell[data-col="0"]::before { left: 100%; } */
+
+.cell.empty:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+    cursor: pointer;
+}
+
+.stone {
+    width: 85%;
+    height: 85%;
+    border-radius: 50%;
+    box-shadow: inset 1px 1px 2px rgba(0, 0, 0, 0.3), 1px 1px 3px rgba(0, 0, 0, 0.5);
+    z-index: 1;
+    box-sizing: border-box;
+    transition: transform 0.1s ease-out;
+}
+
+.cell:active .stone {
+    transform: scale(0.95);
+}
+
+.black {
+    background: radial-gradient(circle at 35% 35%, #666, #111);
+}
+
+.white {
+    background: radial-gradient(circle at 65% 65%, #fff, #ddd);
+    border: 1px solid #bbb;
+}
+
+/* Highlight last move (optional) */
+.last-move .stone {
+  /* Add a subtle border or animation */
+  outline: 2px solid rgba(255, 0, 0, 0.6);
+  outline-offset: 1px;
+}
