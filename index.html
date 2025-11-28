@@ -353,6 +353,51 @@
             box-shadow: none;
         }
 
+        /* Result Panel Styles */
+        .result-panel {
+            display: none;
+            background-color: #fff;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            margin: 20px auto 0;
+            max-width: 320px;
+            animation: pop 0.3s ease-out;
+            border: 2px solid var(--success-color);
+        }
+
+        .result-message {
+            font-size: 1.5rem;
+            color: var(--success-color);
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+
+        .result-score {
+            font-size: 1.2rem;
+            color: #666;
+            margin-bottom: 25px;
+        }
+
+        .next-btn-large {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.3rem;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 4px 0 #1565c0;
+            width: 100%;
+            transition: transform 0.1s;
+        }
+
+        .next-btn-large:active {
+            transform: translateY(4px);
+            box-shadow: none;
+        }
+
         /* Responsive Adjustments */
         @media (min-width: 600px) {
             .keypad-container {
@@ -363,6 +408,10 @@
             .key-btn {
                 font-size: 1.8rem;
                 padding: 20px 0;
+            }
+
+            .result-panel {
+                max-width: 380px;
             }
         }
     </style>
@@ -407,7 +456,7 @@
             <div><input type="number" id="answer-input" placeholder="?" readonly></div>
 
             <!-- Virtual Keypad -->
-            <div class="keypad-container">
+            <div class="keypad-container" id="keypad">
                 <button class="key-btn" onclick="appendNumber(7)">7</button>
                 <button class="key-btn" onclick="appendNumber(8)">8</button>
                 <button class="key-btn" onclick="appendNumber(9)">9</button>
@@ -421,6 +470,13 @@
                 <button class="key-btn" onclick="appendNumber(0)">0</button>
                 <button class="key-btn action-key" onclick="backspace()">⌫</button>
                 <button class="key-btn enter-key" id="keypad-enter" onclick="checkAnswer()">送出答案</button>
+            </div>
+
+            <!-- Result Panel (Hidden by default) -->
+            <div id="result-panel" class="result-panel">
+                <div class="result-message" id="result-msg">🎉 答對了！</div>
+                <div class="result-score" id="result-score-text">+10 分</div>
+                <button class="next-btn-large" onclick="generateProblem()">下一題 ➜</button>
             </div>
 
             <div id="mini-feedback"></div>
@@ -663,13 +719,25 @@
                     isNewRecord = true;
                 }
                 updateScoreUI();
-                if (isNewRecord && currentSessionScore > 10) feedback.innerHTML = "<span style='color:#d0021b; font-size:1.3rem'>🏆 破紀錄啦！太強了！</span>";
-                else feedback.innerHTML = "<span style='color:green'>🎉 答對了！ (+10分)</span>";
 
-                // UI updates
-                document.getElementById('keypad-enter').style.display = 'none'; // Hide Enter on keypad
-                document.getElementById('next-btn').style.display = 'inline-block';
-                document.getElementById('explain-trigger').style.display = 'inline-block';
+                // Show Result Panel
+                document.getElementById('keypad').style.display = 'none';
+                document.getElementById('result-panel').style.display = 'block';
+
+                const resultMsg = document.getElementById('result-msg');
+                const resultScore = document.getElementById('result-score-text');
+
+                if (isNewRecord && currentSessionScore > 10) {
+                    resultMsg.innerHTML = "🏆 破紀錄啦！";
+                    resultMsg.style.color = "#d0021b";
+                } else {
+                    resultMsg.innerHTML = "🎉 答對了！";
+                    resultMsg.style.color = "var(--success-color)";
+                }
+                resultScore.innerText = `本次得分: ${currentSessionScore}`;
+
+                feedback.innerHTML = ""; // Clear mini feedback
+
             } else {
                 feedback.innerHTML = "<span style='color:red'>💪 加油，看看解題思路！</span>";
                 document.getElementById('explain-trigger').style.display = 'inline-block';
@@ -699,9 +767,9 @@
         function setProblem(text) { document.getElementById('problem-text').innerText = text; }
         function resetUI() {
             document.getElementById('mini-feedback').innerHTML = "";
-            document.getElementById('keypad-enter').style.display = 'flex'; // Restore Enter key
-            document.getElementById('keypad-enter').style.gridColumn = 'span 3'; // Restore Grid span
-            document.getElementById('check-btn').style.display = 'none'; // Keep original button hidden
+            document.getElementById('keypad').style.display = 'grid'; // Show Keypad
+            document.getElementById('result-panel').style.display = 'none'; // Hide Result Panel
+            document.getElementById('check-btn').style.display = 'none';
             document.getElementById('next-btn').style.display = 'none';
             document.getElementById('explain-trigger').style.display = 'none';
             document.getElementById('explain-trigger').innerText = "💡 查看解題思路";
