@@ -229,16 +229,21 @@ class GomokuAIEngine {
         this.gameState.isAiThinking = true;
         await new Promise(resolve => setTimeout(resolve, 20));
 
-        // 1. VCT Search (Victory by Continuous Threats)
-        const vctMove = this.vctSearch();
-        if (vctMove) {
-            console.log("VCT Found!", vctMove);
-            return vctMove;
-        }
+        try {
+            // 1. VCT Search (Victory by Continuous Threats)
+            const vctMove = this.vctSearch();
+            if (vctMove) {
+                console.log("VCT Found!", vctMove);
+                return vctMove;
+            }
 
-        // 2. Alpha-Beta Search
-        const bestMove = this.iterativeDeepening();
-        return bestMove;
+            // 2. Alpha-Beta Search
+            const bestMove = this.iterativeDeepening();
+            return bestMove;
+        } catch (error) {
+            console.error("AI Error:", error);
+            return null;
+        }
     }
 
     // --- VCT Search ---
@@ -441,8 +446,8 @@ class GomokuAIEngine {
         const myPatterns = this.countPatterns(board, player);
         const opPatterns = this.countPatterns(board, opponent);
 
-        let myScore = this.calculateScoreFromPatterns(myPatterns);
-        let opScore = this.calculateScoreFromPatterns(opPatterns);
+        let myScore = this.calculateScoreFromPatterns(myPatterns, false);
+        let opScore = this.calculateScoreFromPatterns(opPatterns, true);
 
         // Positional
         for (let r = 0; r < GomokuConstants.BOARD_SIZE; r++) {
@@ -500,7 +505,7 @@ class GomokuAIEngine {
         return counts;
     }
 
-    calculateScoreFromPatterns(counts) {
+    calculateScoreFromPatterns(counts, isOpponent) {
         const S = GomokuConstants.AI.SCORES;
         let score = 0;
 
@@ -515,8 +520,15 @@ class GomokuAIEngine {
         score += counts.live4 * S.LIVE_FOUR;
         score += counts.dead4 * S.DEAD_FOUR;
         score += counts.live3 * S.LIVE_THREE;
-        score += counts.dead3 * S.DEAD_THREE;
-        score += counts.live2 * S.LIVE_TWO;
+
+        // Minor Threats: Dampen score if it's opponent's (User Request: Don't prioritize blocking these)
+        if (isOpponent) {
+            score += counts.dead3 * S.DEAD_THREE * 0.1;
+            score += counts.live2 * S.LIVE_TWO * 0.1;
+        } else {
+            score += counts.dead3 * S.DEAD_THREE;
+            score += counts.live2 * S.LIVE_TWO;
+        }
 
         return score;
     }
@@ -604,24 +616,33 @@ class GomokuController {
 
     async handleCellClick(row, col) {
         if (this.gameState.gameOver || this.gameState.isAiThinking || this.gameState.currentPlayer !== GomokuConstants.PLAYER1) return;
-        if (this.ruleEngine.makeMove(row, col, GomokuConstants.PLAYER1)) {
-            this.renderer.renderBoard(this.handleCellClick.bind(this));
-            this.renderer.updateMessage();
-            if (!this.gameState.gameOver) {
-                this.gameState.currentPlayer = GomokuConstants.PLAYER2;
-                this.renderer.updateMessage();
-                this.gameState.isAiThinking = true;
+
+        try {
+            if (this.ruleEngine.makeMove(row, col, GomokuConstants.PLAYER1)) {
                 this.renderer.renderBoard(this.handleCellClick.bind(this));
-                await new Promise(resolve => setTimeout(resolve, 50));
-                const aiMove = await this.aiEngine.makeMove();
-                this.gameState.isAiThinking = false;
-                if (aiMove) {
-                    this.ruleEngine.makeMove(aiMove.row, aiMove.col, GomokuConstants.PLAYER2);
-                    this.gameState.currentPlayer = GomokuConstants.PLAYER1;
+                this.renderer.updateMessage();
+                if (!this.gameState.gameOver) {
+                    this.gameState.currentPlayer = GomokuConstants.PLAYER2;
+                    this.renderer.updateMessage();
+                    this.gameState.isAiThinking = true;
+                    this.renderer.renderBoard(this.handleCellClick.bind(this));
+                    await new Promise(resolve => setTimeout(resolve, 50));
+
+                    const aiMove = await this.aiEngine.makeMove();
+                    this.gameState.isAiThinking = false;
+
+                    if (aiMove) {
+                        this.ruleEngine.makeMove(aiMove.row, aiMove.col, GomokuConstants.PLAYER2);
+                        this.gameState.currentPlayer = GomokuConstants.PLAYER1;
+                    }
+                    this.renderer.renderBoard(this.handleCellClick.bind(this));
+                    this.renderer.updateMessage();
                 }
-                this.renderer.renderBoard(this.handleCellClick.bind(this));
-                this.renderer.updateMessage();
             }
+        } catch (error) {
+            console.error("Game Error:", error);
+            this.gameState.isAiThinking = false; // Recover UI state
+            this.renderer.updateMessage();
         }
     }
     reset() {
